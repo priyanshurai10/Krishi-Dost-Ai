@@ -436,32 +436,75 @@ const DashboardView = ({ setActiveTab }) => {
   );
 };
 
+// ==========================================
+// YAHAN SE NAYA KNOWLEDGE VIEW ADD HUA HAI
+// ==========================================
 const KnowledgeView = () => {
   const { t } = useContext(AppContext);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Hamari mini offline database agri-chemicals ke liye
+  const chemicalDatabase = [
+    { name: "Urea (Nitrogen)", type: "Fertilizer", desc: "Essential for leaf growth. Apply in split doses for best results during vegetative stage.", warning: "Overuse degrades soil health and weakens plant stems. Do not apply before heavy rain.", color: "green" },
+    { name: "DAP (Di-ammonium Phosphate)", type: "Fertilizer", desc: "Excellent for robust root development during early growth stages. High phosphorus content.", info: "Best applied as a basal dose before or during sowing of seeds.", color: "blue" },
+    { name: "MOP (Muriate of Potash)", type: "Fertilizer", desc: "Improves crop quality, disease resistance, and grain weight. High potassium content.", info: "Apply during the flowering and grain-filling stages.", color: "purple" },
+    { name: "Neem Oil", type: "Organic Pesticide", desc: "Natural repellent for aphids, whiteflies, and mites without harming beneficial insects.", info: "Mix 5ml with 1 liter water and mild soap. Spray during early morning.", color: "teal" },
+    { name: "Mancozeb", type: "Fungicide", desc: "Broad-spectrum contact fungicide to prevent early blights and leaf spots.", warning: "Wear protective gear. Do not spray within 15 days of harvest.", color: "red" },
+    { name: "Zinc Sulphate", type: "Micronutrient", desc: "Cures zinc deficiency (like Khaira disease in rice). Promotes healthy enzyme production.", info: "Use 25kg/hectare as a basal application or 0.5% foliar spray.", color: "orange" }
+  ];
+
+  // Search Logic (Real-time filtering)
+  const filteredChemicals = chemicalDatabase.filter(chem => 
+    chem.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    chem.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    chem.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2"><FlaskConical className="w-6 h-6 text-green-600"/> {t('knowledge') || 'Agri-Chemical Library'}</h2>
+      
+      {/* Search Bar */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input type="text" placeholder={t('seed_search_placeholder') || 'Search seeds, fertilizers...'} className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-green-500 outline-none dark:text-white shadow-sm" />
+        <input 
+          type="text" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={t('seed_search_placeholder') || 'Search seeds, fertilizers, pesticides...'} 
+          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-green-500 outline-none dark:text-white shadow-sm transition-all" 
+        />
       </div>
+      
+      {/* Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-green-300 transition-colors">
-            <h3 className="font-bold text-lg mb-2 dark:text-white text-green-700">Urea (Nitrogen)</h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">Essential for leaf growth. Apply in split doses for best results during vegetative stage.</p>
-            <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-lg text-sm text-orange-800 dark:text-orange-300 flex items-start gap-2">
-               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5"/>
-               <span>Overuse degrades soil health and weakens plant stems. Do not apply before heavy rain.</span>
+         {filteredChemicals.length > 0 ? filteredChemicals.map((chem, index) => (
+           <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-green-300 transition-all hover:-translate-y-1">
+              <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-lg dark:text-white">{chem.name}</h3>
+                  <span className="text-xs font-bold px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg">{chem.type}</span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{chem.desc}</p>
+              
+              {chem.warning ? (
+                <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg text-sm text-red-800 dark:text-red-300 flex items-start gap-2">
+                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5"/>
+                   <span>{chem.warning}</span>
+                </div>
+              ) : chem.info ? (
+                <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
+                   <Info className="w-4 h-4 shrink-0 mt-0.5"/>
+                   <span>{chem.info}</span>
+                </div>
+              ) : null}
+           </div>
+         )) : (
+            <div className="col-span-1 md:col-span-2 text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+               <FlaskConical className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+               <p className="text-gray-500 dark:text-gray-400 font-medium">Koi result nahi mila "{searchTerm}" ke liye.</p>
+               <button onClick={() => setSearchTerm('')} className="mt-2 text-green-600 hover:underline text-sm font-bold">Clear Search</button>
             </div>
-         </div>
-         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-green-300 transition-colors">
-            <h3 className="font-bold text-lg mb-2 dark:text-white text-blue-700">DAP (Di-ammonium Phosphate)</h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">Excellent for robust root development during early growth stages. High phosphorus content.</p>
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg text-sm text-blue-800 dark:text-blue-300 flex items-start gap-2">
-               <Info className="w-4 h-4 shrink-0 mt-0.5"/>
-               <span>Best applied as a basal dose before or during sowing of seeds.</span>
-            </div>
-         </div>
+         )}
       </div>
     </div>
   );
