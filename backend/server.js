@@ -90,6 +90,83 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString(), ai_provider: 'Groq' });
 });
 
+// ==========================================
+// NEW MODULES: WEATHER & MANDI ROUTES
+// ==========================================
+
+// 1. Weather Module Route
+app.get('/api/weather', async (req, res) => {
+    try {
+        const { pincode } = req.query;
+        if (!pincode || pincode.length !== 6) {
+            return res.status(400).json({ success: false, error: "Please enter a valid 6-digit Pincode." });
+        }
+
+        // Mock data for immediate testing (Aap baad mein OpenWeather API se connect kar sakte hain)
+        const mockWeatherData = {
+            success: true,
+            location: `Pincode: ${pincode}`,
+            temperature: "32°C",
+            condition: "Heavy rainfall expected tomorrow",
+            humidity: "78%",
+            windSpeed: "14 km/h",
+            alert: "Alert: Heavy rainfall expected in your district tomorrow. Avoid spraying pesticides."
+        };
+        
+        res.json(mockWeatherData);
+    } catch (error) {
+        console.error("Weather Route Error:", error.message);
+        res.status(500).json({ success: false, error: "Failed to fetch weather data." });
+    }
+});
+
+// 2. Mandi Rates Module Route
+app.get('/api/mandi', async (req, res) => {
+    try {
+        // Mock Mandi Prices Data for Farmers
+        const mockMandiData = {
+            success: true,
+            lastUpdated: new Date().toLocaleDateString('en-IN'),
+            rates: [
+                { crop: "Wheat (गेंहू)", priceRange: "₹2,200 - ₹2,450 / Quintal", trend: "Up" },
+                { crop: "Rice (धान)", priceRange: "₹2,100 - ₹2,300 / Quintal", trend: "Stable" },
+                { crop: "Mustard (सरसों)", priceRange: "₹5,400 - ₹5,800 / Quintal", trend: "Up" },
+                { crop: "Potato (आलू)", priceRange: "₹1,200 - ₹1,500 / Quintal", trend: "Down" }
+            ]
+        };
+        res.json(mockMandiData);
+    } catch (error) {
+        console.error("Mandi Route Error:", error.message);
+        res.status(500).json({ success: false, error: "Failed to fetch Mandi rates." });
+    }
+});
+
+// 3. Profit Estimator / Loan Calculator Route
+app.post('/api/calculate', (req, res) => {
+    try {
+        const { type, amount, rate, duration, cropType, landSize } = req.body;
+        
+        if (type === 'loan') {
+            const p = parseFloat(amount);
+            const r = parseFloat(rate) / 12 / 100;
+            const n = parseFloat(duration) * 12;
+            
+            const emi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            return res.json({ success: true, emi: Math.round(emi), totalPayment: Math.round(emi * n) });
+        } 
+        
+        if (type === 'profit') {
+            const baseProfitPerAcres = cropType === 'Wheat' ? 25000 : 35000;
+            const estimatedReturn = baseProfitPerAcres * parseFloat(landSize);
+            return res.json({ success: true, estimatedReturn: estimatedReturn });
+        }
+
+        res.status(400).json({ success: false, error: "Invalid calculation type." });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Calculation failed." });
+    }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { chatHistory = [], newText, imageBase64, language } = req.body;
