@@ -12,6 +12,9 @@ import {
 
 const AppContext = createContext();
 
+// GLOBAL BACKEND URL
+const BASE_URL = "https://krishi-dost-backend.onrender.com";
+
 // FULL MULTILINGUAL TRANSLATION DICTIONARY
 const translations = {
   en: {
@@ -138,21 +141,27 @@ const translations = {
   mr: { app_name: 'कृषी दोस्त', dashboard: 'डॅशबोर्ड', ai_chat: 'एआय सहाय्यक', knowledge: 'बियाणे आणि रसायने', profit: 'नफा अंदाज', nav_weather: 'हवामान', schemes: 'सरकारी योजना', helpline: 'हेल्पलाइन' },
 };
 
-const fullLanguageNames = { en: "English", hi: "Hindi", bn: "Bengali", mr: "Marathi" };
-
 const fetchLocationAndWeather = async (pincode) => {
   try {
+    const response = await fetch(`${BASE_URL}/api/weather?pincode=${pincode}`);
+    const backendData = await response.json();
+    
+    // Connect with third party on frontend using backend validation
     const postRes = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
     const postData = await postRes.json();
     if (postData[0].Status !== "Success") throw new Error("Invalid Pincode");
+    
     const district = postData[0].PostOffice[0].District;
     const state = postData[0].PostOffice[0].State;
+
     const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(district)}&state=${encodeURIComponent(state)}&country=India&format=json`);
     const geoData = await geoRes.json();
     let lat = geoData[0]?.lat || 20.5937;
     let lon = geoData[0]?.lon || 78.9629;
+
     const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,is_day,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`);
     const weatherData = await weatherRes.json();
+
     return {
       location: { district, state, country: 'India' },
       weather: {
@@ -161,40 +170,25 @@ const fetchLocationAndWeather = async (pincode) => {
         humidity: weatherData.current.relative_humidity_2m,
         wind: weatherData.current.wind_speed_10m,
         rainProb: weatherData.daily.precipitation_probability_max[0] || 0,
-        advice: weatherData.current.precipitation > 0 ? "Rain expected. Avoid pesticide spraying." : "Clear weather. Good time for irrigation and field work."
+        advice: backendData.alert || (weatherData.current.precipitation > 0 ? "Rain expected. Avoid pesticide spraying." : "Clear weather. Good time for irrigation and field work.")
       }
     };
   } catch (e) { return null; }
 };
 
 const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
-  const BACKEND_URL = "https://krishi-dost-backend.onrender.com/api/chat";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const response = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chatHistory, newText, imageBase64, language }) });
+      const response = await fetch(`${BASE_URL}/api/chat`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ chatHistory, newText, imageBase64, language }) 
+      });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error);
       return data.text;
     } catch (error) {
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-         try {
-             const SANDBOX_KEY = "";
-             const isVision = !!imageBase64;
-             let fallbackMessages = [{ role: "system", content: `You are Krishi Dost, an expert AI for Indian farmers. Reply natively in ${language}. Keep answers practical.` }];
-             chatHistory.slice(-4).forEach(m => fallbackMessages.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "" }));
-             let userContent = newText || "Analyze this crop image.";
-             if (isVision) { fallbackMessages.push({ role: "user", content: [ { type: "text", text: userContent }, { type: "image_url", image_url: { url: imageBase64 } } ] }); } 
-             else { fallbackMessages.push({ role: "user", content: userContent }); }
-             const fallbackRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                 method: "POST", headers: { "Authorization": `Bearer ${SANDBOX_KEY}`, "Content-Type": "application/json" },
-                 body: JSON.stringify({ model: isVision ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile", messages: fallbackMessages, temperature: 0.3, max_tokens: 1024 })
-             });
-             const fallbackData = await fallbackRes.json();
-             if (fallbackData.choices) return fallbackData.choices[0].message.content;
-             throw new Error("Sandbox API Failed");
-         } catch (sandboxErr) { throw new Error(`Backend is offline and Fallback failed.`); }
-      }
-      if (attempt === 2) return `⚠️ Network Error: Could not connect to the backend server.`;
+      if (attempt === 2) return `⚠️ Network Error: Could not connect to the Krishi Dost backend server.`;
       await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
     }
   }
@@ -305,7 +299,6 @@ const DashboardView = ({ setActiveTab }) => {
   return (
     <div className="space-y-10 animate-fade-in pb-10">
       
-      {/* 1. TOP SECTION: PRE-PINCODE VS POST-PINCODE */}
       {!location ? (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-600 to-green-800 text-white p-6 sm:p-10 shadow-xl border-b-4 border-green-900/50">
             <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
@@ -349,8 +342,8 @@ const DashboardView = ({ setActiveTab }) => {
                       <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{item.crop}</p>
                       <p className="font-black text-xl dark:text-white my-1">{item.price}</p>
                       <div className="flex justify-between items-center mt-2">
-                        <p className={`text-xs font-bold px-2 py-1 rounded-md ${item.trend === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : item.trend === 'down' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
-                          {item.trend === 'up' ? '▲' : item.trend === 'down' ? '▼' : '▬'} {t('trend') || 'Trend'}
+                        <p className={`text-xs font-bold px-2 py-1 rounded-md ${item.trend === 'Up' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : item.trend === 'Down' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+                          {item.trend === 'Up' ? '▲' : item.trend === 'Down' ? '▼' : '▬'} Trend
                         </p>
                       </div>
                     </div>
@@ -361,7 +354,6 @@ const DashboardView = ({ setActiveTab }) => {
         </div>
       )}
 
-      {/* 2. QUICK HELPLINES */}
       <div>
           <h3 className="text-xl font-bold dark:text-white mb-4 flex items-center gap-2"><PhoneCall className="w-6 h-6 text-green-600"/> {t('quick_helpline') || 'Emergency Farmer Helplines'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -379,7 +371,6 @@ const DashboardView = ({ setActiveTab }) => {
           </div>
       </div>
 
-      {/* 3. QUICK FARMING KNOWLEDGE */}
       <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold dark:text-white flex items-center gap-2"><BookOpen className="w-6 h-6 text-blue-600"/> {t('knowledge_hub') || 'Quick Farming Knowledge'}</h3>
@@ -395,7 +386,6 @@ const DashboardView = ({ setActiveTab }) => {
           </div>
       </div>
 
-      {/* 4. UPCOMING FEATURES (ROADMAP) */}
       <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold dark:text-white flex items-center gap-2"><Sparkles className="w-6 h-6 text-purple-600"/> {t('upcoming_title') || 'What\'s Coming Next?'}</h3>
@@ -418,7 +408,6 @@ const DashboardView = ({ setActiveTab }) => {
           </div>
       </div>
 
-      {/* FEATURE PREVIEW MODAL */}
       {selectedFeature && (() => {
         const ModalIcon = selectedFeature.icon;
         return (
@@ -443,7 +432,6 @@ const DashboardView = ({ setActiveTab }) => {
         </div>
         );
       })()}
-
     </div>
   );
 };
@@ -481,16 +469,36 @@ const KnowledgeView = () => {
 
 const ProfitEstimatorView = () => {
   const { t } = useContext(AppContext);
+  const [cropType, setCropType] = useState('');
+  const [landSize, setLandSize] = useState('');
+  const [result, setResult] = useState(null);
+
+  const calculateProfit = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/calculate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'profit', cropType, landSize })
+      });
+      const data = await response.json();
+      if(data.success) setResult(data.estimatedReturn);
+    } catch (err) { console.error("Error", err); }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2"><Scale className="w-6 h-6 text-green-600"/> {t('profit') || 'Profit Estimator'}</h2>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
         <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">Calculate expected returns and investment costs based on AI market predictions.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <input type="text" placeholder={t('crop_type') || 'Crop Type'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
-          <input type="number" placeholder={t('land_size') || 'Land Size'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
+          <input type="text" value={cropType} onChange={e=>setCropType(e.target.value)} placeholder={t('crop_type') || 'Crop Type'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
+          <input type="number" value={landSize} onChange={e=>setLandSize(e.target.value)} placeholder={t('land_size') || 'Land Size (Acres)'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
         </div>
-        <button className="bg-green-600 hover:bg-green-700 transition-colors text-white font-medium px-4 py-3 rounded-xl w-full">{t('calculate_profit') || 'Calculate'}</button>
+        <button onClick={calculateProfit} className="bg-green-600 hover:bg-green-700 transition-colors text-white font-medium px-4 py-3 rounded-xl w-full">{t('calculate_profit') || 'Calculate'}</button>
+        {result !== null && (
+          <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
+             <h3 className="text-green-800 dark:text-green-400 font-bold">Estimated Profit: ₹{result.toLocaleString('en-IN')}</h3>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -498,16 +506,38 @@ const ProfitEstimatorView = () => {
 
 const FarmLoanView = () => {
   const { t } = useContext(AppContext);
+  const [amount, setAmount] = useState('');
+  const [rate, setRate] = useState('');
+  const [duration, setDuration] = useState('');
+  const [result, setResult] = useState(null);
+
+  const calculateLoan = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/calculate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'loan', amount, rate, duration })
+      });
+      const data = await response.json();
+      if(data.success) setResult(data);
+    } catch (err) { console.error("Error", err); }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2"><Banknote className="w-6 h-6 text-green-600"/> {t('loan_center') || 'Farm Loan Center'}</h2>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <input type="number" placeholder={t('loan_amount') || 'Loan Amount'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
-          <input type="number" placeholder={t('interest_rate') || 'Interest Rate'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
-          <input type="number" placeholder={t('duration_years') || 'Duration'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
+          <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder={t('loan_amount') || 'Loan Amount (₹)'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
+          <input type="number" value={rate} onChange={e=>setRate(e.target.value)} placeholder={t('interest_rate') || 'Interest Rate (%)'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
+          <input type="number" value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t('duration_years') || 'Duration (Years)'} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 dark:text-white" />
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-4 py-3 rounded-xl w-full">{t('calculate_emi') || 'Calculate EMI'}</button>
+        <button onClick={calculateLoan} className="bg-blue-600 hover:bg-blue-700 transition-colors text-white font-medium px-4 py-3 rounded-xl w-full">{t('calculate_emi') || 'Calculate EMI'}</button>
+        {result !== null && (
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+             <h3 className="text-blue-800 dark:text-blue-400 font-bold mb-1">Monthly EMI: ₹{result.emi.toLocaleString('en-IN')}</h3>
+             <p className="text-sm text-blue-700 dark:text-blue-300">Total Payment: ₹{result.totalPayment.toLocaleString('en-IN')}</p>
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -571,7 +601,6 @@ const HelpCenterView = () => {
   );
 };
 
-// DEDICATED NEW VIEWS
 const WeatherView = () => {
   const { t } = useContext(AppContext);
   return (
@@ -588,17 +617,20 @@ const MandiView = () => {
     <div className="space-y-6 animate-fade-in pb-10">
       <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2"><BarChart3 className="w-6 h-6 text-green-600"/> {t('nav_mandi') || 'Market / Mandi Rates'}</h2>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
-        {mandi ? (
+        {mandi && mandi.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {mandi.map((item, idx) => (
-              <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700">
+              <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-green-300 transition-all">
                 <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">{item.crop}</p>
-                <p className="font-black text-xl dark:text-white my-1">{item.price}</p>
+                <p className="font-black text-xl dark:text-white my-1">{item.priceRange || item.price}</p>
+                <p className={`text-xs font-bold inline-block px-2 py-1 rounded-md mt-2 ${item.trend === 'Up' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : item.trend === 'Down' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {item.trend === 'Up' ? '▲' : item.trend === 'Down' ? '▼' : '▬'} {item.trend}
+                </p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">Please enter a pincode to see live mandi rates.</p>
+          <p className="text-gray-500">Please enter a pincode above to see live mandi rates.</p>
         )}
       </div>
     </div>
@@ -726,13 +758,23 @@ export default function App() {
     else document.documentElement.classList.remove('dark');
   }, [theme]);
 
+  // Integrated API fetching for both Weather & Mandi when valid Pincode is entered
   useEffect(() => {
     const fetchAllData = async () => {
       if (pincode.length === 6 && /^\d+$/.test(pincode)) {
         setWeatherLoading(true); setWeatherError(null);
+        
         const data = await fetchLocationAndWeather(pincode);
         if (data) {
-          setLocation(data.location); setWeather(data.weather); 
+          setLocation(data.location); 
+          setWeather(data.weather); 
+          
+          // Trigger Mandi Rates fetch successfully linked
+          try {
+             const mandiRes = await fetch(`${BASE_URL}/api/mandi`);
+             const mandiData = await mandiRes.json();
+             if(mandiData.success) setMandi(mandiData.rates);
+          } catch(err) { console.error("Mandi load failed", err); }
         } else {
           setWeatherError(t('invalid_pincode') || 'Invalid Pincode');
           setLocation(null); setWeather(null); setMandi(null);
@@ -746,7 +788,6 @@ export default function App() {
     return () => clearTimeout(timeoutId);
   }, [pincode, lang]);
 
-  // ALL 12 SIDEBAR ITEMS RESTORED!
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { id: 'chat', icon: MessageSquare, label: t('ai_chat') },
@@ -768,7 +809,6 @@ export default function App() {
         
         <NoticeBar />
 
-        {/* TOP NAVBAR */}
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -778,7 +818,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Pincode Input */}
             <div className="flex-1 max-w-sm relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 
@@ -809,7 +848,6 @@ export default function App() {
 
         <div className="max-w-7xl mx-auto flex h-[calc(100vh-4rem-40px)] relative">
           
-          {/* PREMIUM SIDEBAR */}
           <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none flex flex-col`}>
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
               <button onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} className="font-black text-green-600 dark:text-green-500 flex items-center gap-2 text-xl hover:scale-105 transition-transform">
@@ -818,7 +856,6 @@ export default function App() {
               <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"><X className="w-6 h-6"/></button>
             </div>
             
-            {/* BACK TO DASHBOARD BUTTON */}
             <div className="p-4 pb-0">
                <button onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all shadow-sm ${activeTab === 'dashboard' ? 'bg-gradient-to-r from-green-600 to-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                   <Home className="w-5 h-5"/> Back to Home
@@ -841,17 +878,14 @@ export default function App() {
             </nav>
           </aside>
 
-          {/* OVERLAY FOR MOBILE */}
           {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-          {/* MAIN CONTENT AREA */}
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative min-h-full">
-            {/* Dynamic Routing based on Sidebar Selection */}
             {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
             {activeTab === 'chat' && <AIChatView />}
             {activeTab === 'knowledge' && <KnowledgeView />}
             {activeTab === 'profit' && <ProfitEstimatorView />}
-            {activeTab === 'yield' && <YieldView />}
+            {activeTab === 'yield' && <ComingSoonView title={t('yield_title') || 'Crop Yield Predictor'} icon={TrendingUp} />}
             {activeTab === 'loan' && <FarmLoanView />}
             {activeTab === 'schemes' && <GovtSchemesView />}
             {activeTab === 'helpline' && <HelpCenterView />}
@@ -865,7 +899,6 @@ export default function App() {
           </main>
         </div>
 
-        {/* LOGIN MODAL */}
         {showLogin && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-8 relative animate-fade-in shadow-2xl">
