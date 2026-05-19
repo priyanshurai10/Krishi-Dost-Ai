@@ -732,7 +732,7 @@ export default function App() {
         setWeatherLoading(true); setWeatherError(null);
         const data = await fetchLocationAndWeather(pincode);
         if (data) {
-          setLocation(data.location); setWeather(data.weather); setMandi(generateMockMandi());
+          setLocation(data.location); setWeather(data.weather); 
         } else {
           setWeatherError(t('invalid_pincode') || 'Invalid Pincode');
           setLocation(null); setWeather(null); setMandi(null);
