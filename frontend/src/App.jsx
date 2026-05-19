@@ -178,7 +178,7 @@ const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
     } catch (error) {
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
          try {
-             const SANDBOX_KEY = "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";
+             const SANDBOX_KEY = "";
              const isVision = !!imageBase64;
              let fallbackMessages = [{ role: "system", content: `You are Krishi Dost, an expert AI for Indian farmers. Reply natively in ${language}. Keep answers practical.` }];
              chatHistory.slice(-4).forEach(m => fallbackMessages.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "" }));
