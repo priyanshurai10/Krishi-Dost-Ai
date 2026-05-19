@@ -168,7 +168,7 @@ const fetchLocationAndWeather = async (pincode) => {
 };
 
 const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
-  const BACKEND_URL = 'http://localhost:5000/api/chat';
+  const BACKEND_URL = "https://krishi-dost-backend.onrender.com/api/chat";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const response = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chatHistory, newText, imageBase64, language }) });
