@@ -141,12 +141,12 @@ const translations = {
   mr: { app_name: 'कृषी दोस्त', dashboard: 'डॅशबोर्ड', ai_chat: 'एआय सहाय्यक', knowledge: 'बियाणे आणि रसायने', profit: 'नफा अंदाज', nav_weather: 'हवामान', schemes: 'सरकारी योजना', helpline: 'हेल्पलाइन' },
 };
 
+// ==========================================
+// FAIL-PROOF WEATHER FUNCTION
+// ==========================================
 const fetchLocationAndWeather = async (pincode) => {
   try {
-    const response = await fetch(`${BASE_URL}/api/weather?pincode=${pincode}`);
-    const backendData = await response.json();
-    
-    // Connect with third party on frontend using backend validation
+    // Step 1: Direct Pincode to District/State via fast public API
     const postRes = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
     const postData = await postRes.json();
     if (postData[0].Status !== "Success") throw new Error("Invalid Pincode");
@@ -154,13 +154,28 @@ const fetchLocationAndWeather = async (pincode) => {
     const district = postData[0].PostOffice[0].District;
     const state = postData[0].PostOffice[0].State;
 
+    // Step 2: Fetch Coordinates
     const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(district)}&state=${encodeURIComponent(state)}&country=India&format=json`);
     const geoData = await geoRes.json();
     let lat = geoData[0]?.lat || 20.5937;
     let lon = geoData[0]?.lon || 78.9629;
 
+    // Step 3: Fast Weather Fetch from Open-Meteo
     const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,is_day,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`);
     const weatherData = await weatherRes.json();
+
+    // Default Smart Advice based on direct weather data
+    let advice = weatherData.current.precipitation > 0 ? "Rain expected. Avoid pesticide spraying." : "Clear weather. Good time for irrigation and field work.";
+
+    // Step 4: Background attempt to wake Render backend for custom alerts
+    // We do NOT block the UI if Render takes 40s to wake up!
+    try {
+        const backendRes = await fetch(`${BASE_URL}/api/weather?pincode=${pincode}`, { signal: AbortSignal.timeout(3000) });
+        const backendData = await backendRes.json();
+        if (backendData.alert) advice = backendData.alert;
+    } catch (err) {
+        console.warn("Backend sleeping, using default fast advice.");
+    }
 
     return {
       location: { district, state, country: 'India' },
@@ -170,10 +185,13 @@ const fetchLocationAndWeather = async (pincode) => {
         humidity: weatherData.current.relative_humidity_2m,
         wind: weatherData.current.wind_speed_10m,
         rainProb: weatherData.daily.precipitation_probability_max[0] || 0,
-        advice: backendData.alert || (weatherData.current.precipitation > 0 ? "Rain expected. Avoid pesticide spraying." : "Clear weather. Good time for irrigation and field work.")
+        advice: advice
       }
     };
-  } catch (e) { return null; }
+  } catch (e) { 
+      console.error("Critical Pincode Error:", e);
+      return null; 
+  }
 };
 
 const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
@@ -436,9 +454,6 @@ const DashboardView = ({ setActiveTab }) => {
   );
 };
 
-// ==========================================
-// YAHAN SE NAYA KNOWLEDGE VIEW ADD HUA HAI
-// ==========================================
 const KnowledgeView = () => {
   const { t } = useContext(AppContext);
   const [searchTerm, setSearchTerm] = useState('');
@@ -453,7 +468,6 @@ const KnowledgeView = () => {
     { name: "Zinc Sulphate", type: "Micronutrient", desc: "Cures zinc deficiency (like Khaira disease in rice). Promotes healthy enzyme production.", info: "Use 25kg/hectare as a basal application or 0.5% foliar spray.", color: "orange" }
   ];
 
-  // Search Logic (Real-time filtering)
   const filteredChemicals = chemicalDatabase.filter(chem => 
     chem.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     chem.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -464,7 +478,6 @@ const KnowledgeView = () => {
     <div className="space-y-6 animate-fade-in pb-10">
       <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2"><FlaskConical className="w-6 h-6 text-green-600"/> {t('knowledge') || 'Agri-Chemical Library'}</h2>
       
-      {/* Search Bar */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input 
@@ -476,7 +489,6 @@ const KnowledgeView = () => {
         />
       </div>
       
-      {/* Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {filteredChemicals.length > 0 ? filteredChemicals.map((chem, index) => (
            <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-green-300 transition-all hover:-translate-y-1">
@@ -812,7 +824,7 @@ export default function App() {
           setLocation(data.location); 
           setWeather(data.weather); 
           
-          // Trigger Mandi Rates fetch successfully linked
+          // Trigger Mandi Rates fetch explicitly decoupled from weather crash
           try {
              const mandiRes = await fetch(`${BASE_URL}/api/mandi`);
              const mandiData = await mandiRes.json();
