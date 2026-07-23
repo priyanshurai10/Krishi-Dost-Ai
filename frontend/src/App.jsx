@@ -255,6 +255,14 @@ const Footer = () => {
         <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Developer & Social Profiles</p>
         <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5">
           <a 
+            href="https://krishi-dost-ai.vercel.app/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all text-xs font-black shadow-md"
+          >
+            <ExternalLink className="w-4 h-4" /> Live Site
+          </a>
+          <a 
             href="https://github.com/priyanshurai10" 
             target="_blank" 
             rel="noopener noreferrer" 
