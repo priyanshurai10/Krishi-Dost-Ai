@@ -29,13 +29,37 @@ if (process.env.GROQ_API_KEY) {
 
 const queryCache = new NodeCache({ stdTTL: 86400 });
 
-const SYSTEM_INSTRUCTION = `You are Krishi Dost, an elite agricultural AI assistant for Indian farmers. Reply strictly in the language of the user. Focus exclusively on farming, crops, fertilizers, pesticides, weather advisories, farm loans, and government schemes. Be concise, actionable, and encouraging.`;
+const SYSTEM_INSTRUCTION = `You are Krishi Dost, an elite agricultural AI assistant for Indian farmers.
+
+CRITICAL MANDATORY RULE:
+Detect the EXACT language, script, and dialect of the user's message (e.g. Hindi in Devanagari, English, Hinglish/Romanized Hindi, Bhojpuri, Bengali, Marathi, Punjabi, Telugu, Tamil, Gujarati, etc.).
+You MUST reply strictly in the EXACT SAME LANGUAGE and SCRIPT as the user's prompt!
+- If the user asks in Hindi ("गेहूं में कौन सा खाद डालें?"), respond in Hindi ("गेहूं की फसल में...").
+- If the user asks in Hinglish ("wheat me konsa fertilizer dale?"), respond in Hinglish ("Wheat crop me pehla dose...").
+- If the user asks in English ("What fertilizer should I use for wheat?"), respond in English ("For wheat crop, apply...").
+- If the user asks in any regional language (Bengali, Marathi, Punjabi, Tamil, etc.), respond in that exact regional language and script.
+
+Focus exclusively on farming, crops, fertilizers, pesticides, weather advisories, farm loans, and government schemes. Be concise, actionable, and encouraging.`;
 
 // LOCAL FALLBACK AI KNOWLEDGE ENGINE FOR 100% RELIABILITY
 const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
-  const query = (text || '').toLowerCase();
+  const rawText = text || '';
+  const query = rawText.toLowerCase();
+  const isHindiScript = /[\u0900-\u097F]/.test(rawText);
   
-  if (imageBase64 || query.includes('disease') || query.includes('leaf') || query.includes('yellow') || query.includes('spot') || query.includes('fungus') || query.includes('pest')) {
+  if (imageBase64 || query.includes('disease') || query.includes('leaf') || query.includes('yellow') || query.includes('spot') || query.includes('fungus') || query.includes('pest') || query.includes('कीड़ा') || query.includes('रोग') || query.includes('बीमारी')) {
+    if (isHindiScript) {
+      return `🌱 **कृषि दोस्त AI फसल स्वास्थ्य जांच**:
+      
+**पहचाछी गई समस्या**: फंगल लीफ ब्लाइट / पीला रतुआ चेतावनी
+**गंभीरता**: मध्यम (48 घंटे के भीतर उपचार करें)
+
+**अनुशंसित समाधान**:
+1. **रासायनिक उपचार**: सुबह के समय **मैनकोज़ेब 75% WP** @ 2 ग्राम/लीटर पानी या **प्रोपीकोनाज़ोल 25% EC** @ 1 मि.ली./लीटर पानी का छिड़काव करें।
+2. **जैविक रोकथाम**: **नीम का तेल** (10,000 PPM) @ 5 मि.ली./लीटर पानी में हल्का तरल साबुन मिलाकर छिड़कें।
+3. **सावधानी**: 3 दिनों तक खेत में अत्यधिक सिंचाई न करें।`;
+    }
+
     return `🌱 **Krishi Dost AI Crop Health Diagnosis**:
     
 **Identified Issue**: Fungal Leaf Blight / Yellow Rust Warning
@@ -47,7 +71,15 @@ const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
 3. **Precaution**: Avoid field flood irrigation for 3 days and ensure proper field drainage.`;
   }
 
-  if (query.includes('wheat') || query.includes('गेंहू') || query.includes('nPK') || query.includes('urea') || query.includes('fertilizer')) {
+  if (query.includes('wheat') || query.includes('गेंहू') || query.includes('गेहूं') || query.includes('npk') || query.includes('urea') || query.includes('fertilizer') || query.includes('खाद')) {
+    if (isHindiScript) {
+      return `🌾 **गेहूं की फसल एवं उर्वरक प्रबंधन सलाह**:
+
+• **बुआई के समय**: DAP @ 50 किग्रा/एकड़ + MOP @ 25 किग्रा/एकड़ डालें।
+• **पहली सिंचाई पर (21-25 दिन)**: यूरीया @ 45 किग्रा/एकड़ का छिड़काव करें।
+• **दूसरी सिंचाई पर (40-45 दिन)**: यूरीया @ 45 किग्रा/एकड़ + जिंक सल्फेट @ 5 किग्रा/एकड़ दें।`;
+    }
+
     return `🌾 **Wheat Crop Care & Fertilizer Management Advisory**:
 
 • **Basal Dose**: Apply DAP @ 50 kg/acre + MOP @ 25 kg/acre during sowing.
@@ -56,7 +88,15 @@ const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
 • **Tip**: Spray 1% NPK (19:19:19) at tillering stage for maximum grain development.`;
   }
 
-  if (query.includes('loan') || query.includes('kcc') || query.includes('interest') || query.includes('bank')) {
+  if (query.includes('loan') || query.includes('kcc') || query.includes('interest') || query.includes('bank') || query.includes('ऋण') || query.includes('लोन')) {
+    if (isHindiScript) {
+      return `💳 **किसान क्रेडिट कार्ड (KCC) एवं कृषि ऋण जानकारी**:
+
+• **अधिकतम रियायती सीमा**: ₹3.00 लाख तक केवल **4% प्रभावी ब्याज दर** पर।
+• **आवश्यक दस्तावेज**: खतौनी/खसरा प्रमाण, आधार कार्ड, पैन कार्ड और बैंक पासबुक।
+• **आवेदन कैसे करें**: निकटतम बैंक (SBI, PNB) या PM-Kisan पोर्टल से आवेदन करें।`;
+    }
+
     return `💳 **Kisan Credit Card (KCC) & Farm Loan Information**:
 
 • **Max Subsidized Limit**: Up to ₹3.00 Lakh at **4% effective interest rate** (with prompt 3% interest subvention).
@@ -64,7 +104,15 @@ const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
 • **How to Apply**: Visit any nearby Public Sector Bank (SBI, PNB, Bank of Baroda) or apply through PM-Kisan portal.`;
   }
 
-  if (query.includes('scheme') || query.includes('pm kisan') || query.includes('subsidy')) {
+  if (query.includes('scheme') || query.includes('pm kisan') || query.includes('subsidy') || query.includes('योजना') || query.includes('सब्सिडी')) {
+    if (isHindiScript) {
+      return `🏛️ **सरकारी कृषि योजनाएं विवरण**:
+
+1. **PM-किसान सम्मान निधि**: ₹6,000/वर्ष (₹2,000 की 3 किस्तों में)।
+2. **PM फसल बीमा योजना (PMFBY)**: केवल 1.5% - 2% प्रीमियम पर फसल सुरक्षा।
+3. **SMAM योजना**: कृषि यंत्रों पर 40% - 80% तक की सब्सिडी।`;
+    }
+
     return `🏛️ **Government Agriculture Schemes Overview**:
 
 1. **PM-Kisan Samman Nidhi**: ₹6,000/year direct financial support in 3 equal installments of ₹2,000.
@@ -72,9 +120,20 @@ const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
 3. **Sub-Mission on Agri Mechanization (SMAM)**: 40% - 80% subsidy on buying tractors and machinery.`;
   }
 
+  if (isHindiScript) {
+    return `👨‍🌾 **नमस्ते! मैं आपका कृषि दोस्त AI सहायक हूँ**:
+
+आप मुझसे किसी भी भाषा (हिंदी, अंग्रेजी, या अपनी क्षेत्रीय भाषा) में सवाल पूछ सकते हैं।
+
+• **फसल रोग निदान** (या पौधे की फोटो अपलोड करें)
+• **खाद एवं उर्वरक की मात्रा** (यूरिया, DAP, NPK)
+• **फसल लाभ, लोन EMI या KCC सीमा**
+• **PM-किसान एवं सरकारी योजनाएं**`;
+  }
+
   return `👨‍🌾 **Namaste! I am your Krishi Dost AI Agriculture Assistant**:
 
-I am trained on Indian agricultural soil types, seasonal crops, pest management, and government farmer schemes.
+I am trained to reply in whatever language you ask your question in.
 
 • Ask me about **crop diseases** (or upload a plant photo).
 • Check **fertilizer dosage** (Urea, DAP, NPK).

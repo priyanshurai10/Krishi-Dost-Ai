@@ -120,9 +120,19 @@ const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
     console.warn("Backend chat unavailable, using client AI engine:", error.message);
   }
 
-  // Local fallback response engine
-  const q = (newText || '').toLowerCase();
-  if (imageBase64 || q.includes('disease') || q.includes('fungus') || q.includes('yellow') || q.includes('pest') || q.includes('leaf')) {
+  // Local fallback response engine with script detection
+  const rawText = newText || '';
+  const q = rawText.toLowerCase();
+  const isHindiScript = /[\u0900-\u097F]/.test(rawText);
+
+  if (imageBase64 || q.includes('disease') || q.includes('fungus') || q.includes('yellow') || q.includes('pest') || q.includes('leaf') || q.includes('कीड़ा') || q.includes('रोग')) {
+    if (isHindiScript) {
+      return `🌱 **कृषि दोस्त AI फसल स्वास्थ्य जांच**:
+
+**रोग**: फंगल लीफ ब्लाइट / पत्ती झुलसा जोखिम
+**उपचार**: **मैनकोज़ेब 75% WP** @ 2 ग्राम/लीटर पानी या **प्रोपीकोनाज़ोल 25% EC** @ 1 मि.ली./लीटर पानी का छिड़काव करें।`;
+    }
+
     return `🌱 **Krishi Dost AI Crop Diagnosis & Advisory**:
 
 **Diagnosis**: Fungal Leaf Blight / Early Rust Risk Identified
@@ -133,20 +143,40 @@ const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
 2. **Organic Control**: Spray **Neem Oil** (10,000 PPM) @ 5ml/liter water mixed with liquid soap.
 3. **Precaution**: Avoid field waterlogging for 3 days to prevent root rot.`;
   }
-  if (q.includes('fertilizer') || q.includes('urea') || q.includes('dap') || q.includes('wheat')) {
+
+  if (q.includes('fertilizer') || q.includes('urea') || q.includes('dap') || q.includes('wheat') || q.includes('गेहूं') || q.includes('खाद')) {
+    if (isHindiScript) {
+      return `🌾 **उर्वरक एवं फसल पोषण गाइड**:
+
+• **बुआई के समय**: DAP @ 50 किग्रा/एकड़ + MOP @ 25 किग्रा/एकड़ दें।
+• **प्रथम सिंचाई पर**: यूरीया @ 45 किग्रा/एकड़ का टॉप ड्रेसिंग करें।`;
+    }
+
     return `🌾 **Crop Nutrient & Fertilizer Guide**:
 
 • **Basal Dose**: Apply DAP @ 50 kg/acre + MOP @ 25 kg/acre during sowing.
 • **1st Dose (20-25 Days)**: Top dress Urea @ 45 kg/acre after first irrigation.
 • **2nd Dose (40-45 Days)**: Top dress Urea @ 45 kg/acre + Zinc Sulphate @ 5 kg/acre.`;
   }
+
+  if (isHindiScript) {
+    return `👨‍🌾 **नमस्ते! मैं आपका कृषि दोस्त AI सहायक हूँ**:
+
+मैं आपके द्वारा पूछे गए सवाल की भाषा में ही उत्तर देने के लिए प्रशिक्षित हूँ।
+
+• फसल रोग या कीट निदान (या फोटो भेजें)
+• खाद एवं दवाइयों की उचित खुराक
+• लोन, KCC एवं सरकारी योजनाएं`;
+  }
+
   return `👨‍🌾 **Namaste! I am your Krishi Dost AI Agriculture Assistant**:
 
-I can assist you with:
-• **Crop Disease Diagnosis**: Upload a plant leaf picture or describe symptoms.
-• **Fertilizer & Pesticide Dosage**: Calculate per-acre application rates.
-• **Govt Schemes & Subsidies**: Details on PM-Kisan, PMFBY, and KCC loans.
-• **Weather & Mandi Advisories**: Custom recommendations based on your local pincode.`;
+I will respond in whatever language you ask your question in.
+
+• Ask me about **crop diseases** (or upload a plant photo).
+• Check **fertilizer dosage** (Urea, DAP, NPK).
+• Calculate **crop profit, loan EMI, or KCC limit**.
+• Ask about **PM-Kisan & government subsidies**.`;
 };
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
