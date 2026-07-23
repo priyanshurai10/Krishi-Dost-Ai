@@ -31,13 +31,15 @@ const queryCache = new NodeCache({ stdTTL: 86400 });
 
 const SYSTEM_INSTRUCTION = `You are Krishi Dost, an elite agricultural AI assistant for Indian farmers.
 
-CRITICAL MANDATORY RULE:
-Detect the EXACT language, script, and dialect of the user's message (e.g. Hindi in Devanagari, English, Hinglish/Romanized Hindi, Bhojpuri, Bengali, Marathi, Punjabi, Telugu, Tamil, Gujarati, etc.).
-You MUST reply strictly in the EXACT SAME LANGUAGE and SCRIPT as the user's prompt!
-- If the user asks in Hindi ("गेहूं में कौन सा खाद डालें?"), respond in Hindi ("गेहूं की फसल में...").
-- If the user asks in Hinglish ("wheat me konsa fertilizer dale?"), respond in Hinglish ("Wheat crop me pehla dose...").
-- If the user asks in English ("What fertilizer should I use for wheat?"), respond in English ("For wheat crop, apply...").
-- If the user asks in any regional language (Bengali, Marathi, Punjabi, Tamil, etc.), respond in that exact regional language and script.
+STRICT MANDATORY RULE FOR LANGUAGE RESPONSE:
+Analyze the user's prompt text. Identify the EXACT language, script, and writing style used by the user in their prompt.
+YOU MUST RESPOND ONLY AND STRICTLY IN THE SAME LANGUAGE AND SCRIPT IN WHICH THE USER ASKED THE QUESTION!
+- If the user asks in Hindi ("गेहूं में कौन सा खाद डालें?"), respond STRICTLY in Hindi using Devanagari script.
+- If the user asks in Hinglish ("wheat me konsa fertilizer dale?"), respond STRICTLY in Hinglish (Hindi written in English alphabet).
+- If the user asks in English ("What fertilizer should I use for wheat?"), respond STRICTLY in English.
+- If the user asks in Bengali ("গম ফসলে কি সার দেব?"), respond STRICTLY in Bengali.
+- If the user asks in Marathi, Punjabi, Tamil, Telugu, Gujarati, Bhojpuri, or any other language, respond STRICTLY in that same language and script!
+- DO NOT answer in English if the user asked in Hindi, Hinglish, or any regional language!
 
 Focus exclusively on farming, crops, fertilizers, pesticides, weather advisories, farm loans, and government schemes. Be concise, actionable, and encouraging.`;
 
@@ -123,9 +125,9 @@ const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
   if (isHindiScript) {
     return `👨‍🌾 **नमस्ते! मैं आपका कृषि दोस्त AI सहायक हूँ**:
 
-आप मुझसे किसी भी भाषा (हिंदी, अंग्रेजी, या अपनी क्षेत्रीय भाषा) में सवाल पूछ सकते हैं।
+मैं आपके द्वारा पूछे गए सवाल की भाषा में ही उत्तर देने के लिए प्रशिक्षित हूँ।
 
-• **फसल रोग निदान** (या पौधे की फोटो अपलोड करें)
+• **फसल रोग निदान** (या फोटो भेजें)
 • **खाद एवं उर्वरक की मात्रा** (यूरिया, DAP, NPK)
 • **फसल लाभ, लोन EMI या KCC सीमा**
 • **PM-किसान एवं सरकारी योजनाएं**`;
@@ -244,7 +246,11 @@ app.post('/api/chat', apiLimiter, async (req, res) => {
                         if (m.text) messages.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text });
                     });
                 }
-                messages.push({ role: "user", content: newText || "Diagnose plant health." });
+                
+                const userPromptWithStrictLang = `[USER QUESTION]: ${newText || "Diagnose plant health."}
+[STRICT INSTRUCTION]: Respond ONLY AND STRICTLY in the exact language, script, and dialect in which the [USER QUESTION] above is written! If Hindi Devanagari -> reply in Hindi Devanagari. If Hinglish -> reply in Hinglish. If English -> reply in English. If regional script -> reply in that exact script!`;
+
+                messages.push({ role: "user", content: userPromptWithStrictLang });
 
                 const completion = await groq.chat.completions.create({
                     model: "llama-3.3-70b-versatile",
