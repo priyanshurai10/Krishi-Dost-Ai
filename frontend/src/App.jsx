@@ -6,9 +6,9 @@ import {
   ChevronRight, BarChart3, FlaskConical, Scale, Tractor, 
   AlertTriangle, CheckCircle2, User, LogOut, SunMoon, Leaf, Image as ImageIcon,
   Activity, CloudLightning, Info, CreditCard,
-  Bug, TrendingUp, Mic, Satellite, CalendarDays, BookOpen, Sparkles, Star,
+  Bug, TrendingUp, Mic, MicOff, Satellite, CalendarDays, BookOpen, Sparkles, Star,
   Mail, MessageCircle, LayoutDashboard, CloudSun, Home, ExternalLink, HelpCircle, FileText, Check,
-  Globe
+  Globe, Volume2, VolumeX, Layers, PieChart
 } from 'lucide-react';
 
 import { TRANSLATIONS } from './data/translations';
@@ -17,6 +17,10 @@ import { AGRI_CHEMICALS_DATABASE } from './data/chemicals';
 import { MANDI_RATES_DATABASE } from './data/mandiData';
 import { findLocationByPincode } from './data/pincodes';
 import { IndiaPincodeModal } from './components/IndiaPincodeModal';
+import { CropYieldPredictorView } from './components/CropYieldPredictorView';
+import { CropCalendarView } from './components/CropCalendarView';
+import { SoilHealthView } from './components/SoilHealthView';
+import { AgriAnalyticsView } from './components/AgriAnalyticsView';
 
 const AppContext = createContext();
 
@@ -378,10 +382,14 @@ const DashboardView = ({ setActiveTab }) => {
   const [selectedFeatureModal, setSelectedFeatureModal] = useState(null);
 
   const features = [
-    { icon: Bug, label: t('feat_disease'), color: 'bg-red-500', tab: 'chat' },
-    { icon: CloudLightning, label: t('feat_weather'), color: 'bg-blue-500', tab: 'weather' },
-    { icon: Scale, label: t('feat_profit'), color: 'bg-amber-500', tab: 'profit' },
-    { icon: Banknote, label: t('feat_loan'), color: 'bg-emerald-500', tab: 'loan' },
+    { icon: Bug, label: t('feat_disease'), color: 'bg-red-500', tab: 'chat', badge: 'Vision AI' },
+    { icon: TrendingUp, label: t('feat_yield'), color: 'bg-purple-600', tab: 'yield', badge: 'New AI' },
+    { icon: CalendarDays, label: t('feat_calendar'), color: 'bg-emerald-600', tab: 'calendar', badge: 'New' },
+    { icon: Layers, label: t('feat_soil'), color: 'bg-teal-600', tab: 'soil', badge: 'New' },
+    { icon: BarChart3, label: t('feat_bi'), color: 'bg-indigo-600', tab: 'analytics', badge: 'BI Decision' },
+    { icon: CloudLightning, label: t('feat_weather'), color: 'bg-blue-500', tab: 'weather', badge: 'Live' },
+    { icon: Scale, label: t('feat_profit'), color: 'bg-amber-500', tab: 'profit', badge: 'Tool' },
+    { icon: Banknote, label: t('feat_loan'), color: 'bg-emerald-500', tab: 'loan', badge: 'KCC 4%' },
   ];
 
   const upcomingFeatures = [
@@ -1258,15 +1266,15 @@ const MandiView = () => {
   );
 };
 
-const UpcomingView = () => {
+const UpcomingView = ({ setActiveTab }) => {
   const { t } = useContext(AppContext);
   const [notifiedFeatures, setNotifiedFeatures] = useState({});
 
   const upcomingList = [
-    { id: 'yield', icon: TrendingUp, title: 'AI Crop Yield Prediction Engine', desc: 'Predicts exact harvest output per acre by fusing high-resolution satellite imagery with micro-climate rain models.' },
-    { id: 'voice', icon: Mic, title: 'Regional Dialect Voice Assistant', desc: 'Enables Indian farmers to speak queries naturally in Bhojpuri, Maithili, Haryanvi, Malwai, and Bundelkhandi.' },
-    { id: 'satellite', icon: Satellite, title: 'Satellite Field Stress Mapping', desc: 'Delivers weekly NDVI thermal maps identifying water stress and nitrogen deficiencies before symptoms appear.' },
-    { id: 'calendar', icon: CalendarDays, title: 'Day-by-Day Crop Task Calendar', desc: 'Auto-customized task schedule for your specific sowing date, fertilizer application timeline, and harvesting.' }
+    { id: 'yield', icon: TrendingUp, title: 'AI Crop Yield Prediction Engine', desc: 'Predicts exact harvest output per acre by fusing high-resolution satellite imagery with micro-climate rain models.', tab: 'yield', launched: true },
+    { id: 'voice', icon: Mic, title: 'Regional Dialect Voice Assistant', desc: 'Enables Indian farmers to speak queries naturally in regional languages with speech-to-text and audio advice playback.', tab: 'chat', launched: true },
+    { id: 'calendar', icon: CalendarDays, title: 'Day-by-Day Crop Task Calendar', desc: 'Auto-customized task schedule for your specific sowing date, fertilizer application timeline, and harvesting.', tab: 'calendar', launched: true },
+    { id: 'satellite', icon: Satellite, title: 'Satellite Field Stress Mapping', desc: 'Delivers weekly NDVI thermal maps identifying water stress and nitrogen deficiencies before symptoms appear.', launched: false }
   ];
 
   const handleNotifyMe = (id) => {
@@ -1292,28 +1300,44 @@ const UpcomingView = () => {
                 <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 flex items-center justify-center">
                   <Icon className="w-6 h-6"/>
                 </div>
-                <h3 className="font-black text-lg text-gray-900 dark:text-white">{item.title}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-lg text-gray-900 dark:text-white">{item.title}</h3>
+                  {item.launched && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-black px-2 py-0.5 rounded-full uppercase">
+                      Live
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-600 dark:text-gray-300 font-medium leading-relaxed">{item.desc}</p>
               </div>
 
-              <button 
-                onClick={() => handleNotifyMe(item.id)}
-                className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                  isNotified
-                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-200 border border-purple-300'
-                    : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
-                }`}
-              >
-                {isNotified ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-purple-600"/> You will be notified on launch!
-                  </>
-                ) : (
-                  <>
-                    Notify Me Upon Launch <ArrowRight className="w-4 h-4"/>
-                  </>
-                )}
-              </button>
+              {item.launched ? (
+                <button 
+                  onClick={() => setActiveTab && setActiveTab(item.tab)}
+                  className="w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+                >
+                  🚀 Launch Feature Now <ArrowRight className="w-4 h-4"/>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleNotifyMe(item.id)}
+                  className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    isNotified
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-200 border border-purple-300'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
+                  }`}
+                >
+                  {isNotified ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-purple-600"/> You will be notified on launch!
+                    </>
+                  ) : (
+                    <>
+                      Notify Me Upon Launch <ArrowRight className="w-4 h-4"/>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )
         })}
@@ -1326,13 +1350,74 @@ const AIChatView = () => {
   const { t, lang } = useContext(AppContext);
   const [messages, setMessages] = useState([{
     sender: 'ai', 
-    text: "Namaste! I am your Krishi Dost AI Assistant. Ask any farming question or upload a photo of an infected leaf/crop. I will diagnose the issue and provide step-by-step treatment in your language.", 
+    text: "Namaste! I am your Krishi Dost AI Assistant. Ask any farming question or upload a photo of an infected leaf/crop. You can also tap the 🎙️ **Microphone** to speak your question, or tap 🔊 **Listen** to hear my recommendations read aloud!", 
     image: null
   }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingIdx, setSpeakingIdx] = useState(null);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  const startVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Please try using Google Chrome or Microsoft Edge.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        if (transcript) {
+          setInput(transcript);
+        }
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+    } catch (err) {
+      console.warn("Speech recognition error:", err);
+      setIsListening(false);
+    }
+  };
+
+  const toggleSpeech = (text, idx) => {
+    if (!('speechSynthesis' in window)) {
+      alert("Audio playback is not supported on this device.");
+      return;
+    }
+    if (speakingIdx === idx) {
+      window.speechSynthesis.cancel();
+      setSpeakingIdx(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#_`]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = /[\u0900-\u097F]/.test(cleanText) ? 'hi-IN' : 'en-IN';
+    utterance.rate = 0.95;
+    utterance.onend = () => setSpeakingIdx(null);
+    utterance.onerror = () => setSpeakingIdx(null);
+    setSpeakingIdx(idx);
+    window.speechSynthesis.speak(utterance);
+  };
 
   const scrollToBottom = () => {
     try {
@@ -1388,12 +1473,19 @@ const AIChatView = () => {
           </div>
           <div>
             <h2 className="font-black text-gray-900 dark:text-white text-base flex items-center gap-2">{t('ai_chat')}</h2>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Multilingual Agricultural Vision AI</span>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Multilingual Agricultural Vision AI • Voice Enabled</span>
           </div>
         </div>
-        <span className="text-xs font-bold px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800">
-          Online & Ready
-        </span>
+        <div className="flex items-center gap-2">
+          {isListening && (
+            <span className="flex items-center gap-1.5 text-xs font-black text-red-600 bg-red-100 dark:bg-red-950 px-2.5 py-1 rounded-full animate-pulse border border-red-300">
+              <Mic className="w-3.5 h-3.5" /> Listening...
+            </span>
+          )}
+          <span className="text-xs font-bold px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800">
+            Online & Ready
+          </span>
+        </div>
       </div>
 
       {/* Quick Suggestion Chips */}
@@ -1419,6 +1511,18 @@ const AIChatView = () => {
             <div className={`p-4 rounded-3xl shadow-sm ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-100 dark:bg-gray-700/80 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200/50 dark:border-gray-600/50'}`}>
               {msg.image && <img src={msg.image} alt="Crop Sample" className="w-56 h-56 object-cover rounded-2xl mb-3 border border-black/10 shadow-sm" />}
               {msg.text && <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={parseMarkdown(msg.text)} />}
+              
+              {/* Speaker Audio Playback Button */}
+              {msg.sender === 'ai' && (
+                <button 
+                  onClick={() => toggleSpeech(msg.text, idx)}
+                  className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-colors border border-emerald-200 dark:border-emerald-800"
+                  title="Listen to advice"
+                >
+                  {speakingIdx === idx ? <VolumeX className="w-3.5 h-3.5 text-red-500 animate-pulse"/> : <Volume2 className="w-3.5 h-3.5 text-emerald-600"/>}
+                  <span>{speakingIdx === idx ? 'Stop Audio' : 'Listen Advice'}</span>
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -1452,12 +1556,26 @@ const AIChatView = () => {
           >
             <Camera className="w-5 h-5" />
           </button>
+
+          {/* Voice Input Button */}
+          <button 
+            onClick={startVoiceInput} 
+            className={`p-3 rounded-2xl transition-all border ${
+              isListening 
+                ? 'bg-red-600 text-white animate-pulse border-red-700 shadow-md ring-2 ring-red-400' 
+                : 'text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 bg-gray-100 dark:bg-gray-900 border-transparent hover:border-emerald-300'
+            }`}
+            title={isListening ? "Listening... Speak now" : "Speak query (Hindi/English)"}
+          >
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </button>
+
           <input 
             type="text" 
             value={input} 
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={t('type_message')}
+            placeholder={isListening ? "Listening to your voice... Speak now..." : t('type_message')}
             className="flex-1 bg-gray-50 dark:bg-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <button onClick={() => handleSend()} className="p-3.5 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors shadow-md">
@@ -1591,10 +1709,14 @@ export default function App() {
     }
   };
 
-  // Nav Items - SETTINGS AND CHAT HISTORY ARE REMOVED!
+  // Nav Items - Complete Navigation Menu
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { id: 'chat', icon: MessageSquare, label: t('ai_chat') },
+    { id: 'yield', icon: TrendingUp, label: t('yield_predictor') },
+    { id: 'calendar', icon: CalendarDays, label: t('crop_calendar') },
+    { id: 'soil', icon: Layers, label: t('soil_health') },
+    { id: 'analytics', icon: BarChart3, label: t('bi_analytics') },
     { id: 'schemes', icon: Landmark, label: t('schemes') },
     { id: 'loan', icon: Banknote, label: t('loan_center') },
     { id: 'profit', icon: Scale, label: t('profit') },
@@ -1742,6 +1864,10 @@ export default function App() {
             <ErrorBoundary>
               {activeTab === 'dashboard' && <DashboardView setActiveTab={setActiveTab} />}
               {activeTab === 'chat' && <AIChatView />}
+              {activeTab === 'yield' && <CropYieldPredictorView baseUrl={BASE_URL} />}
+              {activeTab === 'calendar' && <CropCalendarView />}
+              {activeTab === 'soil' && <SoilHealthView baseUrl={BASE_URL} />}
+              {activeTab === 'analytics' && <AgriAnalyticsView />}
               {activeTab === 'knowledge' && <KnowledgeView />}
               {activeTab === 'profit' && <ProfitEstimatorView />}
               {activeTab === 'loan' && <FarmLoanView />}
@@ -1749,7 +1875,7 @@ export default function App() {
               {activeTab === 'helpline' && <HelpCenterView />}
               {activeTab === 'weather' && <WeatherView />}
               {activeTab === 'mandi' && <MandiView />}
-              {activeTab === 'upcoming' && <UpcomingView />}
+              {activeTab === 'upcoming' && <UpcomingView setActiveTab={setActiveTab} />}
             </ErrorBoundary>
           </main>
         </div>
