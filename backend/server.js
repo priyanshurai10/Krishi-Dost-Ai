@@ -43,104 +43,153 @@ YOU MUST RESPOND ONLY AND STRICTLY IN THE SAME LANGUAGE AND SCRIPT IN WHICH THE 
 
 Focus exclusively on farming, crops, fertilizers, pesticides, weather advisories, farm loans, and government schemes. Be concise, actionable, and encouraging.`;
 
-// LOCAL FALLBACK AI KNOWLEDGE ENGINE FOR 100% RELIABILITY
+// LOCAL INTELLIGENT AGRICULTURAL EXPERT SYSTEM
 const generateSmartAgriculturalResponse = (text, imageBase64, language) => {
-  const rawText = text || '';
-  const query = rawText.toLowerCase();
-  const isHindiScript = /[\u0900-\u097F]/.test(rawText);
+  const raw = String(text || '').trim();
+  const lower = raw.toLowerCase();
   
-  if (imageBase64 || query.includes('disease') || query.includes('leaf') || query.includes('yellow') || query.includes('spot') || query.includes('fungus') || query.includes('pest') || query.includes('कीड़ा') || query.includes('रोग') || query.includes('बीमारी')) {
-    if (isHindiScript) {
-      return `🌱 **कृषि दोस्त AI फसल स्वास्थ्य जांच**:
-      
-**पहचाछी गई समस्या**: फंगल लीफ ब्लाइट / पीला रतुआ चेतावनी
-**गंभीरता**: मध्यम (48 घंटे के भीतर उपचार करें)
+  const isDevanagari = /[\u0900-\u097F]/.test(raw);
+  const hinglishWords = ['kya', 'kaise', 'kare', 'karein', 'konsa', 'kon', 'dale', 'dalen', 'hai', 'hain', 'me', 'mein', 'khet', 'fasal', 'bimari', 'keeda', 'kida', 'patta', 'patti', 'peela', 'mud', 'pani', 'khad', 'dawa', 'dawai', 'spray', 'gehu', 'dhan', 'aloo', 'tamatar', 'sarso', 'mirch', 'pyaz'];
+  const isHinglish = !isDevanagari && hinglishWords.some(w => new RegExp(`\\b${w}\\b`, 'i').test(lower));
+  const langMode = isDevanagari ? 'hi' : isHinglish ? 'hinglish' : (language === 'hi' ? 'hi' : 'en');
 
-**अनुशंसित समाधान**:
-1. **रासायनिक उपचार**: सुबह के समय **मैनकोज़ेब 75% WP** @ 2 ग्राम/लीटर पानी या **प्रोपीकोनाज़ोल 25% EC** @ 1 मि.ली./लीटर पानी का छिड़काव करें।
-2. **जैविक रोकथाम**: **नीम का तेल** (10,000 PPM) @ 5 मि.ली./लीटर पानी में हल्का तरल साबुन मिलाकर छिड़कें।
-3. **सावधानी**: 3 दिनों तक खेत में अत्यधिक सिंचाई न करें।`;
+  // Crop detection
+  let crop = 'general';
+  if (/tomato|tamatar|टमाटर/.test(lower)) crop = 'tomato';
+  else if (/potato|aloo|aalu|आलू/.test(lower)) crop = 'potato';
+  else if (/wheat|gehu|gehun|गेंहू|गेहूं/.test(lower)) crop = 'wheat';
+  else if (/rice|paddy|dhan|धान|चावल/.test(lower)) crop = 'rice';
+  else if (/cotton|kapas|कपास|रुई/.test(lower)) crop = 'cotton';
+  else if (/mustard|sarso|sarson|rai|सरसों|राई/.test(lower)) crop = 'mustard';
+  else if (/sugarcane|ganna|गन्ना/.test(lower)) crop = 'sugarcane';
+  else if (/maize|corn|makka|मक्का/.test(lower)) crop = 'maize';
+  else if (/chilli|chili|mirch|मिर्च/.test(lower)) crop = 'chilli';
+  else if (/onion|pyaz|pyaaz|प्याज/.test(lower)) crop = 'onion';
+  else if (/gram|chana|चना|pulses|dal|दाल|arhar|अरहर/.test(lower)) crop = 'gram';
+
+  // Symptom detection
+  const hasLeafCurl = /curl|mud|sikud|सिकुड़|मुड़|पर्ण कुंचन/.test(lower);
+  const hasYellowing = /yellow|peela|peeli|पीला|पीली|chlorosis/.test(lower);
+  const hasBlight = /blight|spot|dhabba|dhabbey|धब्बा|झुलसा|rot/.test(lower);
+  const hasRust = /rust|ratua|रतुआ/.test(lower);
+  const hasBlast = /blast|jhoka|झोंका/.test(lower);
+  const hasBorer = /borer|stem borer|sundi|sundy|caterpillar|larva|इल्ली|सूंडी|तना छेदक/.test(lower);
+  const hasSuckingPest = /whitefly|aphid|thrips|jassid|mahu|chepa|makkhi|मक्खी|माहू|चेपा|थ्रिप्स/.test(lower);
+  const hasPestGeneral = imageBase64 || hasBorer || hasSuckingPest || /pest|insect|keeda|kida|कीड़ा|कीटनाशक/.test(lower);
+  const hasFertilizer = /fertilizer|urea|dap|npk|potash|mop|zinc|khad|खाद|उर्वरक|पोषण|dose/.test(lower);
+  const hasLoan = /loan|kcc|credit|kisan credit|interest|byaj|ऋण|लोन|ब्याज/.test(lower);
+  const hasScheme = /scheme|yojana|subsidy|pm kisan|pmfby|योजना|सब्सिडी|सम्मान निधि/.test(lower);
+
+  // 1. Tomato Leaf Curl
+  if (crop === 'tomato' && (hasLeafCurl || hasSuckingPest)) {
+    if (langMode === 'hi') {
+      return `🍅 **टमाटर पर्ण कुंचन रोग (Tomato Leaf Curl Virus) उपचार सलाह**:
+
+**कारण**: यह रोग सफेद मक्खी (Whitefly) द्वारा फैलाया जाने वाला वायरल रोग है।
+
+**सटीक रासायनिक एवं जैविक नियंत्रण**:
+1. **कीटनाशक छिड़काव**: सफेद मक्खी की रोकथाम हेतु **इमिडाक्लोप्रिड 17.8% SL** @ 0.5 मि.ली./लीटर पानी अथवा **एसिटामिप्रिड 20% SP** @ 0.5 ग्राम/लीटर पानी का छिड़काव करें।
+2. **जैविक नियंत्रण**: खेत में प्रति एकड़ 15-20 **पीले चिपचिपे ट्रैप (Yellow Sticky Traps)** लगाएं और नीम का तेल (10,000 PPM) @ 5 मि.ली./लीटर पानी का छिड़काव करें।
+3. **सावधानी**: जिन पौधों की पत्तियां बहुत अधिक मुड़ चुकी हैं, उन्हें उखाड़कर नष्ट कर दें ताकि वायरस अन्य पौधों में न फैले।`;
+    } else if (langMode === 'hinglish') {
+      return `🍅 **Tomato Leaf Curl Virus Treatment Advisory**:
+
+**Reason**: Ye bimari Safed Makkhi (Whitefly) ke kaaran failti hai.
+
+**Immediate Steps**:
+1. **Spray**: Whitefly control ke liye **Imidacloprid 17.8% SL** @ 0.5 ml/litre water ya **Acetamiprid 20% SP** @ 0.5 g/litre water spray karein.
+2. **Organic**: 15-20 Yellow Sticky Traps lagayein aur Neem Oil (10,000 PPM) 5 ml/litre spray karein.
+3. **Severe plants**: Jyada kharab podhon ko ukhad kar khet se bahar mitti me daba dein.`;
+    } else {
+      return `🍅 **Tomato Leaf Curl Virus Diagnostic & Treatment**:
+
+**Causal Vector**: Whitefly (*Bemisia tabaci*).
+**Chemical Spray**: Apply **Imidacloprid 17.8% SL** @ 0.5 ml/litre water or **Acetamiprid 20% SP** @ 0.5 g/litre water.
+**Organic/IPM**: Install 15-20 yellow sticky traps/acre and apply Neem oil (10,000 PPM) @ 5 ml/litre water.`;
     }
-
-    return `🌱 **Krishi Dost AI Crop Health Diagnosis**:
-    
-**Identified Issue**: Fungal Leaf Blight / Yellow Rust Warning
-**Severity**: Moderate (Action required within 48 hours)
-
-**Recommended Steps**:
-1. **Chemical Treatment**: Spray **Mancozeb 75% WP** @ 2g/liter water or **Propiconazole 25% EC** @ 1ml/liter water during morning hours.
-2. **Organic Prevention**: Spray **Neem Oil** (10,000 PPM) @ 5ml/liter water with mild liquid soap.
-3. **Precaution**: Avoid field flood irrigation for 3 days and ensure proper field drainage.`;
   }
 
-  if (query.includes('wheat') || query.includes('गेंहू') || query.includes('गेहूं') || query.includes('npk') || query.includes('urea') || query.includes('fertilizer') || query.includes('खाद')) {
-    if (isHindiScript) {
-      return `🌾 **गेहूं की फसल एवं उर्वरक प्रबंधन सलाह**:
-
-• **बुआई के समय**: DAP @ 50 किग्रा/एकड़ + MOP @ 25 किग्रा/एकड़ डालें।
-• **पहली सिंचाई पर (21-25 दिन)**: यूरीया @ 45 किग्रा/एकड़ का छिड़काव करें।
-• **दूसरी सिंचाई पर (40-45 दिन)**: यूरीया @ 45 किग्रा/एकड़ + जिंक सल्फेट @ 5 किग्रा/एकड़ दें।`;
+  // 2. Potato Blight
+  if (crop === 'potato' && (hasBlight || hasPestGeneral)) {
+    if (langMode === 'hi') {
+      return `🥔 **आलू झुलसा रोग (Potato Late & Early Blight) उपचार**:
+1. **शुरुआती अवस्था**: **मैनकोज़ेब 75% WP** @ 2.5 ग्राम/लीटर पानी का छिड़काव करें।
+2. **गंभीर अवस्था**: **साइमोक्सानिल 8% + मैनकोज़ेब 64% WP** (Curzate) @ 3 ग्राम/लीटर या **मेटालेक्सिल 8% + मैनकोज़ेब 64%** (Ridomil Gold) @ 2.5 ग्राम/लीटर का छिड़काव करें।`;
+    } else {
+      return `🥔 **Potato Blight Treatment Advisory**:
+Spray **Mancozeb 75% WP** @ 2.5 g/litre water for prevention, or **Metalaxyl 8% + Mancozeb 64% WP** (Ridomil Gold) @ 2.5 g/litre water for active infection. Avoid waterlogging in furrows.`;
     }
-
-    return `🌾 **Wheat Crop Care & Fertilizer Management Advisory**:
-
-• **Basal Dose**: Apply DAP @ 50 kg/acre + MOP @ 25 kg/acre during sowing.
-• **1st Top Dressing (21-25 days)**: Apply Urea @ 45 kg/acre after Crown Root Initiation (CRI) irrigation.
-• **2nd Top Dressing (40-45 days)**: Apply Urea @ 45 kg/acre + Zinc Sulphate @ 5 kg/acre.
-• **Tip**: Spray 1% NPK (19:19:19) at tillering stage for maximum grain development.`;
   }
 
-  if (query.includes('loan') || query.includes('kcc') || query.includes('interest') || query.includes('bank') || query.includes('ऋण') || query.includes('लोन')) {
-    if (isHindiScript) {
-      return `💳 **किसान क्रेडिट कार्ड (KCC) एवं कृषि ऋण जानकारी**:
-
-• **अधिकतम रियायती सीमा**: ₹3.00 लाख तक केवल **4% प्रभावी ब्याज दर** पर।
-• **आवश्यक दस्तावेज**: खतौनी/खसरा प्रमाण, आधार कार्ड, पैन कार्ड और बैंक पासबुक।
-• **आवेदन कैसे करें**: निकटतम बैंक (SBI, PNB) या PM-Kisan पोर्टल से आवेदन करें।`;
+  // 3. Wheat Yellow Rust / Yellowing
+  if (crop === 'wheat' && (hasRust || hasYellowing || hasBlight)) {
+    if (langMode === 'hi') {
+      return `🌾 **गेहूं का पीला रतुआ (Yellow Rust) व पीलापन प्रबंधन**:
+1. **पीला रतुआ पर**: **प्रोपीकोनाज़ोल 25% EC (Tilt)** @ 1 मि.ली./लीटर पानी (200 मि.ली./एकड़ 200 लीटर पानी में) का तुरंत छिड़काव करें।
+2. **पोषक तत्व कमी से पीलापन पर**: 1% यूरिया + 0.5% जिंक सल्फेट (33%) का पर्णीय छिड़काव करें।`;
+    } else {
+      return `🌾 **Wheat Yellow Rust & Chlorosis Protocol**:
+Spray **Propiconazole 25% EC** @ 1 ml/litre water (200 ml/acre) immediately if yellow powdery stripes appear on leaves. For nutrient chlorosis, spray 1% Urea + 0.5% Zinc Sulphate 33%.`;
     }
-
-    return `💳 **Kisan Credit Card (KCC) & Farm Loan Information**:
-
-• **Max Subsidized Limit**: Up to ₹3.00 Lakh at **4% effective interest rate** (with prompt 3% interest subvention).
-• **Required Documents**: Land Khatauni/Khasra proof, Aadhaar Card, PAN Card, and Bank Account Passbook.
-• **How to Apply**: Visit any nearby Public Sector Bank (SBI, PNB, Bank of Baroda) or apply through PM-Kisan portal.`;
   }
 
-  if (query.includes('scheme') || query.includes('pm kisan') || query.includes('subsidy') || query.includes('योजना') || query.includes('सब्सिडी')) {
-    if (isHindiScript) {
-      return `🏛️ **सरकारी कृषि योजनाएं विवरण**:
-
-1. **PM-किसान सम्मान निधि**: ₹6,000/वर्ष (₹2,000 की 3 किस्तों में)।
-2. **PM फसल बीमा योजना (PMFBY)**: केवल 1.5% - 2% प्रीमियम पर फसल सुरक्षा।
-3. **SMAM योजना**: कृषि यंत्रों पर 40% - 80% तक की सब्सिडी।`;
+  // 4. Rice Stem Borer / Blast
+  if (crop === 'rice' && (hasBorer || hasBlast || hasPestGeneral)) {
+    if (langMode === 'hi') {
+      return `🌾 **धान का तना छेदक (Stem Borer) एवं झोंका रोग**:
+1. **तना छेदक**: **क्लोरांट्रानिलीप्रोल 18.5% SC (Coragen)** @ 0.4 मि.ली./लीटर पानी या **कार्टाप हाइड्रोक्लोराइड 4G दानेदार** @ 7.5 किग्रा/एकड़ खेत में डालें।
+2. **ब्लास्ट (झोंका)**: **ट्राइसाइक्लाज़ोल 75% WP** @ 0.6 ग्राम/लीटर पानी का छिड़काव करें।`;
+    } else {
+      return `🌾 **Rice Stem Borer & Blast Management**:
+Spray **Chlorantraniliprole 18.5% SC** @ 0.4 ml/litre water or broadcast **Cartap Hydrochloride 4G** @ 7.5 kg/acre. For blast lesions, spray **Tricyclazole 75% WP** @ 0.6 g/litre water.`;
     }
-
-    return `🏛️ **Government Agriculture Schemes Overview**:
-
-1. **PM-Kisan Samman Nidhi**: ₹6,000/year direct financial support in 3 equal installments of ₹2,000.
-2. **PM Fasal Bima Yojana (PMFBY)**: Crop insurance with only 1.5% - 2% premium for Kharif & Rabi crops.
-3. **Sub-Mission on Agri Mechanization (SMAM)**: 40% - 80% subsidy on buying tractors and machinery.`;
   }
 
-  if (isHindiScript) {
-    return `👨‍🌾 **नमस्ते! मैं आपका कृषि दोस्त AI सहायक हूँ**:
-
-मैं आपके द्वारा पूछे गए सवाल की भाषा में ही उत्तर देने के लिए प्रशिक्षित हूँ।
-
-• **फसल रोग निदान** (या फोटो भेजें)
-• **खाद एवं उर्वरक की मात्रा** (यूरिया, DAP, NPK)
-• **फसल लाभ, लोन EMI या KCC सीमा**
-• **PM-किसान एवं सरकारी योजनाएं**`;
+  // 5. Crop-Specific Fertilizer
+  if (hasFertilizer) {
+    if (crop === 'wheat') {
+      return `🌾 **गेहूं उर्वरक प्रबंधन (प्रति एकड़)**:
+• बुआई के समय: DAP @ 50 किग्रा + MOP (पोटाश) @ 25 किग्रा + यूरिया @ 20 किग्रा।
+• पहली सिंचाई (CRI 21-25 दिन): यूरिया @ 45 किग्रा।
+• दूसरी सिंचाई (40-45 दिन): यूरिया @ 45 किग्रा + जिंक सल्फेट 33% @ 5 किग्रा।`;
+    }
+    if (crop === 'rice') {
+      return `🌾 **धान उर्वरक प्रबंधन (प्रति एकड़)**:
+• रोपाई के समय: DAP @ 50 किग्रा + MOP @ 30 किग्रा + जिंक सल्फेट @ 5 किग्रा।
+• 20-25 दिन पर (कल्ले फूटते समय): यूरिया @ 45 किग्रा।
+• 45-50 दिन पर (बालियां बनते समय): यूरिया @ 35 किग्रा।`;
+    }
+    return `🌱 **संतुलित उर्वरक खुराक (प्रति एकड़)**:
+बुआई के समय DAP @ 50 किग्रा + MOP @ 25 किग्रा आधार खुराक के रूप में दें। पहली सिंचाई पर यूरिया @ 45 किग्रा का टॉप ड्रेसिंग करें तथा जिंक की कमी हेतु 5 किग्रा जिंक सल्फेट 33% का प्रयोग करें।`;
   }
 
-  return `👨‍🌾 **Namaste! I am your Krishi Dost AI Agriculture Assistant**:
+  // 6. Loan / KCC
+  if (hasLoan) {
+    return `💳 **किसान क्रेडिट कार्ड (KCC) 4% ऋण जानकारी**:
+• **ब्याज दर**: केवल **4% वार्षिक** (समय पर भुगतान करने पर 3% की सरकारी ब्याज छूट के साथ)।
+• **ऋण सीमा**: ₹3.00 लाख तक (₹1.60 लाख तक बिना किसी गिरवी के)।
+• **आवेदन**: निकटतम बैंक शाखा (SBI, PNB, BoB) या PM-Kisan पोर्टल से आवेदन करें।`;
+  }
 
-I am trained to reply in whatever language you ask your question in.
+  // 7. Schemes
+  if (hasScheme) {
+    return `🏛️ **सरकारी कृषि योजनाएं**:
+1. **PM-किसान सम्मान निधि**: ₹6,000/वर्ष (₹2,000 की 3 किस्तों में DBT)।
+2. **PM फसल बीमा योजना (PMFBY)**: खरीफ 2%, रबी 1.5% प्रीमियम पर सुरक्षा।
+3. **PM-KUSUM सोलर पंप**: सोलर कृषि पंप पर 60% तक की भारी सरकारी सब्सिडी।`;
+  }
 
-• Ask me about **crop diseases** (or upload a plant photo).
-• Check **fertilizer dosage** (Urea, DAP, NPK).
-• Calculate **crop profit, loan EMI, or KCC limit**.
-• Ask about **PM-Kisan & government subsidies**.`;
+  // General Pest Fallback
+  if (hasPestGeneral) {
+    return `🌱 **कृषि दोस्त AI फसल कीट व फंगस नियंत्रण**:
+• **फफूंद व पत्तियों पर धब्बे**: **मैनकोज़ेब 75% WP** @ 2.5 ग्राम/लीटर या **एज़ोक्सीस्ट्रोबिन + डिफेनोकोनाज़ोल** @ 1 मि.ली./लीटर पानी का छिड़काव करें।
+• **कीट व इल्ली**: **क्लोरांट्रानिलीप्रोल 18.5% SC** @ 0.4 मि.ली./लीटर या **नीम का तेल (10,000 PPM)** @ 5 मि.ली./लीटर पानी में छिड़कें।`;
+  }
+
+  // Default
+  return `🌾 **कृषि दोस्त AI कृषि सलाहकार**:
+आपके प्रश्न "${raw}" के संबंध में:
+संतुलित पोषण एवं समय पर सिंचाई ही उच्च पैदावार की कुंजी है। अपनी फसल का नाम (गेहूं, धान, टमाटर, आलू, आदि) और समस्या बताएं ताकि सटीक दवा व मात्रा बताई जा सके।`;
 };
 
 // ==========================================
