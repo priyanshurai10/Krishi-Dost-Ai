@@ -112,85 +112,85 @@ const fetchLocationAndWeather = async (pincode) => {
 };
 
 const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
-  const customGroqKey = typeof window !== 'undefined' ? (localStorage.getItem('krishi_groq_key') || '').trim() : '';
+  const customGroqKey = typeof window !== 'undefined' ? (localStorage.getItem('krishi_groq_key') || (import.meta.env && import.meta.env.VITE_GROQ_API_KEY) || '').trim() : '';
+  const activeGroqKey = customGroqKey;
 
   const systemPrompt = `You are Krishi Dost AI (कृषि दोस्त AI), an elite agronomy scientist and agricultural advisor for Indian farmers.
 MANDATORY RULES:
 1. Detect and reply in the EXACT SAME language/dialect/script the user writes in:
-   - If Hindi Devanagari (e.g. "गेहूं में यूरिया कब डालें?", "मिट्टी की जांच"): Reply in respectful, clear Hindi Devanagari.
+   - If Hindi Devanagari (e.g. "गेहूं में यूरिया कब डालें?", "टमाटर की दवा", "मिट्टी की जांच"): Reply in respectful, clear Hindi Devanagari.
    - If Hinglish (e.g. "tamatar me patta mud raha h kya kare", "aam me fal kyu girte hai"): Reply in natural conversational Hinglish.
    - If English: Reply in structured English.
    - If Bengali, Marathi, Punjabi, Gujarati, etc.: Reply in that exact language and script.
 2. ANSWER THE USER'S SPECIFIC QUESTION DIRECTLY. Provide genuine, practical, scientifically validated agricultural knowledge.
-3. Include specific medicine/chemical names (e.g. Imidacloprid 17.8% SL @ 0.5ml/L, Mancozeb 75% WP @ 2.5g/L, Planofix, Coragen), exact dosages, organic solutions (Neem oil, Jeevamrit), and irrigation/soil timing.
+3. Include specific medicine/chemical names (e.g. Imidacloprid 17.8% SL @ 0.5ml/L, Mancozeb 75% WP @ 2.5g/L, Planofix, Coragen, Tilt), exact dosages, organic solutions (Neem oil, Jeevamrit), and irrigation/soil timing.
 4. Keep answers neat, formatted with bold highlights and bullet points. Never give canned generic boilerplate.`;
 
-  // 1. Direct High-Speed Groq Cloud AI (if farmer/evaluator added a key)
-  if (customGroqKey && customGroqKey.startsWith('gsk_')) {
-    try {
-      const groqMessages = [
-        { role: 'system', content: systemPrompt },
-        ...(Array.isArray(chatHistory) ? chatHistory.slice(-4).map(m => ({
-          role: m.sender === 'user' ? 'user' : 'assistant',
-          content: m.text
-        })) : []),
-        { role: 'user', content: newText || "Diagnose crop health and provide advisory." }
-      ];
+  // 1. Direct High-Speed Groq Cloud AI (Genuine Real-Time LLM Advisory)
+  if (activeGroqKey && activeGroqKey.startsWith('gsk_')) {
+    const candidateModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
+    const groqMessages = [
+      { role: 'system', content: systemPrompt },
+      ...(Array.isArray(chatHistory) ? chatHistory.slice(-4).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      })) : []),
+      { role: 'user', content: newText || "Diagnose crop health and provide advisory." }
+    ];
 
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${customGroqKey}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: groqMessages,
-          temperature: 0.6,
-          max_tokens: 900
-        }),
-        signal: AbortSignal.timeout(12000)
-      });
+    for (const model of candidateModels) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeGroqKey}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: groqMessages,
+            temperature: 0.6,
+            max_tokens: 850
+          }),
+          signal: AbortSignal.timeout(6000)
+        });
 
-      if (groqRes.ok) {
-        const groqData = await groqRes.json();
-        const reply = groqData.choices?.[0]?.message?.content;
-        if (reply && reply.trim().length > 15) return reply.trim();
+        if (groqRes.ok) {
+          const groqData = await groqRes.json();
+          const reply = groqData.choices?.[0]?.message?.content;
+          if (reply && reply.trim().length > 20 && !reply.toLowerCase().includes("i'm sorry, but i can't help with that")) {
+            return reply.trim();
+          }
+        }
+      } catch (groqErr) {
+        console.warn(`Groq candidate ${model} attempt skipped:`, groqErr.message);
       }
-    } catch (groqErr) {
-      console.warn("Direct Groq API error, falling back:", groqErr.message);
     }
   }
 
   // 2. High-Precision Instant Agronomic Expert System (0ms response, 100% scientific match)
   const expertAdvice = generateDynamicAgriResponse(newText, imageBase64, language);
-  // If the expert system matched a specific crop, fertilizer, irrigation, disease, weed, pest, soil, or loan query:
-  if (expertAdvice && !expertAdvice.includes('1800-180-1551')) {
+  if (expertAdvice) {
     return expertAdvice;
   }
 
-  // 3. For open-ended general questions: Fast Cloud Generative AI (Pollinations with 5s timeout)
+  // 3. Fallback to Backend API
   try {
-    const isHindi = /[\u0900-\u097F]/.test(newText || '');
-    const promptSuffix = isHindi 
-      ? "\n(कृपया कृषि दोस्त AI के रूप में हिंदी में बिंदुवार सटीक वैज्ञानिक सलाह, दवा और खुराक दें)"
-      : "\n(Please reply as Krishi Dost AI with specific agronomic advice, medicine name, and exact dosage in the same language)";
-    const encoded = encodeURIComponent((newText || '') + promptSuffix);
-    const getRes = await fetch(`https://text.pollinations.ai/${encoded}?model=openai`, {
+    const backendRes = await fetch(`${BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatHistory, newText, imageBase64, language }),
       signal: AbortSignal.timeout(5000)
     });
-    if (getRes.ok) {
-      const getText = await getRes.text();
-      if (getText && getText.trim().length > 25 && !getText.includes('<!DOCTYPE') && !getText.includes('<html')) {
-        return getText.trim();
-      }
+    if (backendRes.ok) {
+      const data = await backendRes.json();
+      if (data?.success && data?.text) return data.text;
     }
-  } catch (getErr) {
-    console.warn("Cloud AI attempt skipped/failed, using expert system:", getErr.message);
+  } catch (bErr) {
+    console.warn("Backend chat fetch fallback:", bErr.message);
   }
 
-  // 4. Return Contextual Expert Advisory
-  return expertAdvice;
+  return generateDynamicAgriResponse(newText, imageBase64, language);
 };
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
