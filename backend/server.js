@@ -282,11 +282,12 @@ app.post('/api/calculate', (req, res) => {
     }
 });
 
-// 5. AI Chat Route (Groq with Smart Fallback)
+// 5. AI Chat Route (Groq with Cloud LLM & Smart Fallback)
 app.post('/api/chat', apiLimiter, async (req, res) => {
     try {
         const { chatHistory, newText, imageBase64, language } = req.body;
         
+        // Channel 1: Groq API (if configured in environment)
         if (groq) {
             try {
                 const messages = [{ role: "system", content: SYSTEM_INSTRUCTION }];
@@ -312,11 +313,40 @@ app.post('/api/chat', apiLimiter, async (req, res) => {
                     return res.json({ success: true, text: completion.choices[0].message.content });
                 }
             } catch (groqErr) {
-                console.warn("Groq API call issue, using smart local fallback:", groqErr.message);
+                console.warn("Groq API call issue, trying cloud generative AI:", groqErr.message);
             }
         }
 
-        // Fallback to local intelligent agricultural response engine
+        // Channel 2: Free Cloud Generative AI Engine (Zero Key Needed)
+        try {
+            const aiRes = await fetch('https://text.pollinations.ai/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: SYSTEM_INSTRUCTION },
+                        ...(Array.isArray(chatHistory) ? chatHistory.slice(-4).map(m => ({
+                            role: m.sender === 'user' ? 'user' : 'assistant',
+                            content: m.text
+                        })) : []),
+                        { role: 'user', content: newText || "Diagnose plant health and provide advisory." }
+                    ],
+                    model: 'openai'
+                }),
+                signal: AbortSignal.timeout(12000)
+            });
+
+            if (aiRes.ok) {
+                const text = await aiRes.text();
+                if (text && text.trim().length > 25 && !text.includes('<!DOCTYPE')) {
+                    return res.json({ success: true, text: text.trim() });
+                }
+            }
+        } catch (pollinationsErr) {
+            console.warn("Backend Cloud AI attempt failed, falling back to local expert system:", pollinationsErr.message);
+        }
+
+        // Channel 3: Fallback to local intelligent agricultural response engine
         const fallbackText = generateSmartAgriculturalResponse(newText, imageBase64, language);
         return res.json({ success: true, text: fallbackText });
 

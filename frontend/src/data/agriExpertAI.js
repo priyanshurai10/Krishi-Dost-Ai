@@ -39,9 +39,16 @@ export const generateDynamicAgriResponse = (text = '', imageBase64 = null, selec
   const hasSuckingPest = /whitefly|aphid|thrips|jassid|mahu|chepa|makkhi|मक्खी|माहू|चेपा|थ्रिप्स/.test(lower);
   const hasPestGeneral = imageBase64 || hasBorer || hasSuckingPest || /pest|insect|keeda|kida|कीड़ा|कीटनाशक/.test(lower);
   const hasFertilizer = /fertilizer|urea|dap|npk|potash|mop|zinc|khad|खाद|उर्वरक|पोषण|dose/.test(lower);
-  const hasWeed = /weed|grass|ghas|kharpatwar|खरपतवार|घास|weedicide/.test(lower);
+  const hasWeed = /weed|grass|ghas|kharpatwar|खरपतवार|घास|weedicide|nindai/.test(lower);
   const hasLoan = /loan|kcc|credit|kisan credit|interest|byaj|ऋण|लोन|ब्याज/.test(lower);
   const hasScheme = /scheme|yojana|subsidy|pm kisan|pmfby|योजना|सब्सिडी|सम्मान निधि/.test(lower);
+  const hasSoilTest = /soil|mitti|मिट्टी|mrrida|janch|test|जांच|परीक्षण|sample/.test(lower);
+  const hasFruitDrop = /drop|fall|gir|jhad|गिर|झड़|bor|फूल झड़|फल झड़/.test(lower);
+  const hasOrganic = /organic|jaivik|जैविक|neemastra|jeevamrit|जीवामृत|नीमास्त्र|vermicompost|देसी खाद/.test(lower);
+  const hasProfit = /profit|munafa|मुनाफा|kamai|कमाई|lagat|income|kam lagat/.test(lower);
+  const hasSowing = /sowing|buai|buaai|बुआई|बुवाई|kab lagaye|kab boin|timing/.test(lower);
+  const hasTermite = /termite|deemak|दीमक/.test(lower);
+  const hasSeedTreatment = /seed|beej|बीज|treatment|upchar|उपचार/.test(lower);
   const hasGreeting = /^(hi|hello|hey|namaste|नमस्ते|राम राम|kaun ho|who are you)/.test(lower);
 
   // -------------------------------------------------------------------
@@ -388,7 +395,164 @@ You can ask me about:
   }
 
   // -------------------------------------------------------------------
-  // E. GENERAL PEST & DISEASE DIAGNOSIS
+  // E. SOIL TESTING & FIELD PREPARATION
+  // -------------------------------------------------------------------
+  if (hasSoilTest) {
+    if (langMode === 'hi') {
+      return `🧪 **वैज्ञानिक मिट्टी परीक्षण (Soil Health Testing) विधि गाइड**:
+
+1. **नमूना लेने का सही समय**: रबी या खरीफ फसल की कटाई के बाद खेत खाली होने पर।
+2. **नमूना लेने का तरीका**:
+   • खेत में 8 से 10 जगहों पर अंग्रेजी के 'V' आकार का 15 सेमी (6 इंच) गहरा गड्ढा बनाएं।
+   • खुरपी से गड्ढे की दीवार से 1 इंच मोटी मिट्टी की परत ऊपर से नीचे तक छीलकर निकालें।
+3. **मिश्रण व क्वार्टरिंग (Quartering Method)**:
+   • सभी 8-10 जगहों की मिट्टी को साफ बोरी पर मिलाकर गोल ढेर बनाएं और 4 बराबर भागों में बांटें। आमने-सामने के 2 भाग हटा दें।
+   • यह प्रक्रिया तब तक दोहराएं जब तक लगभग **500 ग्राम मिट्टी** न बचे।
+4. **जांच केंद्र**: इसे कपड़े की थैली में किसान का नाम, खसरा नंबर और मोबाइल नंबर लिखकर नजदीकी **कृषि विज्ञान केंद्र (KVK)** या **मृदा स्वास्थ्य प्रयोगशाला** में जमा करें (सरकारी योजना में कार्ड मुफ्त बनता है)।`;
+    } else {
+      return `🧪 **Scientific Soil Health Sample Collection Guide**:
+
+1. **Sampling Depth**: Dig a 'V'-shaped pit 15 cm (6 inches) deep across 8–10 representative spots per acre.
+2. **Collection**: Slice a 1-inch uniform layer of soil from the pit wall from top to bottom.
+3. **Quartering Method**: Thoroughly mix all samples, spread into a circular heap, divide into 4 quadrants, and discard two opposite quadrants until **500 grams** remains.
+4. **Lab Submission**: Pack in a clean cloth bag labeled with your Farm Khasra number and submit to the nearest **Krishi Vigyan Kendra (KVK)** or Soil Testing Lab.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // F. FRUIT & FLOWER DROP
+  // -------------------------------------------------------------------
+  if (hasFruitDrop) {
+    if (langMode === 'hi') {
+      return `🥭 **फूल व फल झड़ने (Flower & Fruit Drop) का वैज्ञानिक समाधान**:
+
+**प्रमुख कारण**: पोषक तत्वों (विशेषकर बोरॉन व पोटाश) की कमी, हार्मोनल असंतुलन या अत्यधिक सूखा/जलभराव।
+
+**उपचार एवं स्प्रे शेड्यूल**:
+1. **हार्मोनल स्प्रे**: **प्लानोफिक्स (Alpha Naphthyl Acetic Acid 4.5% SL)** @ 4 मि.ली. प्रति 15 लीटर पानी (यानी 0.25 मि.ली./लीटर) का छिड़काव करें। (सावधानी: अधिक मात्रा न डालें)।
+2. **सूक्ष्म पोषक तत्व**: **बोरॉन 20%** @ 1.5 ग्राम/लीटर पानी + **NPK 0:0:50 (पोटाश)** @ 5 ग्राम/लीटर पानी में मिलाकर स्प्रे करें।
+3. **सिंचाई**: फूल आने के समय हल्की सिंचाई करें; भारी जलभराव से बचें।`;
+    } else {
+      return `🥭 **Fruit & Flower Drop Prevention Advisory**:
+
+**Key Causes**: Boron/Potassium deficiency, hormonal imbalance, or moisture stress.
+
+**Management Protocol**:
+1. **Plant Growth Regulator**: Spray **Planofix (NAA 4.5% SL)** @ 4 ml per 15 litres of water (0.25 ml/L). Strict adherence to dosage is mandatory.
+2. **Nutrient Spray**: Mix **Chelated Boron 20%** @ 1.5 g/L + **SOP (0:0:50)** @ 5 g/L to reinforce fruit pedicel strength.
+3. **Moisture Control**: Maintain uniform light soil moisture; avoid flood irrigation during blooming.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // G. WEED & HERBICIDE CONTROL
+  // -------------------------------------------------------------------
+  if (hasWeed) {
+    if (langMode === 'hi') {
+      return `🌾 **खरपतवार (घास/कचरा) नियंत्रण वैज्ञानिक गाइड**:
+
+1. **गेहूं में खरपतवार**:
+   • **मंडूसी (गुल्ली डंडा) + चौड़ी पत्ती घास**: बुआई के 30-35 दिन बाद (पहली सिंचाई के बाद) **सल्फोसल्फ्यूरोन 75% + मेटसल्फ्यूरोन 5% WG** (Total/Leader) @ 16 ग्राम प्रति एकड़ 150 लीटर पानी में फ्लैट फैन नोजल से स्प्रे करें।
+2. **धान में खरपतवार**:
+   • रोपाई के 2-3 दिन के अंदर **प्रेटिलाक्लोर 50% EC** @ 500 मि.ली./एकड़ 2-3 सेमी खड़े पानी में डालें।
+   • खड़ी फसल में 20 दिन बाद: **बिस्पायरीबैक सोडियम 10% SC (Nominee Gold)** @ 100 मि.ली./एकड़।
+3. **सावधानी**: कट नोजल (Flat Fan) का ही प्रयोग करें, धूप खिली रहने पर ही खरपतवारनाशी का छिड़काव करें।`;
+    } else {
+      return `🌾 **Crop Weed & Herbicide Management Protocol**:
+
+1. **Wheat Field Weeds (Phalaris minor / Broadleaf)**:
+   • Spray **Sulfosulfuron 75% + Metsulfuron Methyl 5% WG** @ 16 g/acre mixed in 150L water using a flat-fan nozzle at 30–35 days after sowing (post 1st irrigation).
+2. **Paddy / Rice Field Weeds**:
+   • Pre-emergence (0–3 days): Apply **Pretilachlor 50% EC** @ 500 ml/acre in 2–3 cm standing water.
+   • Post-emergence (20–25 days): Spray **Bispyribac Sodium 10% SC** (Nominee Gold) @ 100 ml/acre.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // H. ORGANIC & NATURAL FARMING (Neemastra / Jeevamrit)
+  // -------------------------------------------------------------------
+  if (hasOrganic) {
+    if (langMode === 'hi') {
+      return `🌿 **प्राकृतिक एवं जैविक खेती फॉर्मूलेशन गाइड (Natural Bio-Formulations)**:
+
+1. **नीमास्त्र (रस चूसक कीटों के लिए)**:
+   • सामग्री: 5 किग्रा नीम की पत्तियां + 5 लीटर देसी गाय का गोमूत्र + 2 किग्रा ताजा गोबर + 100 लीटर पानी।
+   • विधि: 48 घंटे छाया में सड़ाएं, दिन में दो बार डंडे से हिलाएं। छानकर प्रति एकड़ स्प्रे करें।
+2. **जीवामृत (मिट्टी की उर्वरता हेतु)**:
+   • 200 लीटर पानी + 10 किग्रा देसी गाय का गोबर + 10 लीटर गोमूत्र + 2 किग्रा गुड़ + 2 किग्रा बेसन + एक मुट्ठी खेत की मेड़ की मिट्टी।
+   • 4-5 दिन में तैयार; सिंचाई के पानी के साथ बहाएं या 10% घोल का छिड़काव करें।`;
+    } else {
+      return `🌿 **Natural & Organic Bio-Pesticide Preparation**:
+
+1. **Neemastra (Sucking Pests & Caterpillars)**:
+   • Recipe: 5 kg crushed Neem leaves + 5L native cow urine + 2 kg fresh cow dung in 100L water. Ferment for 48 hours, stir clockwise twice daily, filter, and spray 1 acre.
+2. **Jeevamrit (Microbial Soil Booster)**:
+   • 200L water + 10 kg native cow dung + 10L cow urine + 2 kg jaggery + 2 kg chickpea flour + 1 handful uncultivated bund soil. Ferment 4 days and apply through irrigation flood.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // I. FARM PROFIT & COST REDUCTION
+  // -------------------------------------------------------------------
+  if (hasProfit) {
+    if (langMode === 'hi') {
+      return `💰 **कम लागत में कृषि मुनाफा बढ़ाने की 4 वैज्ञानिक तकनीकें**:
+
+1. **मल्चिंग + ड्रिप सिंचाई**: 50% पानी और 40% खाद की बचत होती है तथा खरपतवार 90% रुकते हैं; उत्पादन 35% बढ़ता है (PMKSY योजना में 55-70% सब्सिडी)।
+2. **अंतरवर्तीय फसल प्रणाली (Intercropping)**: मुख्य फसल (गन्ना/कपास) के साथ उड़द, मूंग या आलू लगाकर प्रति एकड़ ₹40,000–60,000 अतिरिक्त आय।
+3. **उच्च मूल्य वाली नकदी फसलें**: पारंपरिक अनाज के साथ 1 एकड़ में लहसुन, शिमला मिर्च, प्याज या सरसों की उन्नत किस्में लगाएं।
+4. **मिट्टी जांच आधारित संतुलित पोषण**: अनावश्यक DAP और यूरिया की बर्बादी रोककर ₹3,000 प्रति एकड़ की सीधी बचत।`;
+    } else {
+      return `💰 **Strategic Interventions for Maximizing Farm Profit Margins**:
+
+1. **Drip Irrigation & Plastic Mulching**: Saves 50% water, eliminates 90% weed pressure, and enhances crop yield by 35%. Avail 55%–70% state subsidy under PMKSY.
+2. **Relay & Multi-Tier Intercropping**: Pair long-duration crops (Sugarcane/Cotton) with short-duration legumes (Moong/Urad) for an extra ₹40,000–₹60,000/acre.
+3. **Balanced Soil-Based Fertilization**: Avoid over-applying DAP/Urea to save ~₹3,000/acre while enhancing soil microbial health.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // J. SOWING SEASONS & SEED TIMINGS
+  // -------------------------------------------------------------------
+  if (hasSowing) {
+    if (langMode === 'hi') {
+      return `📅 **प्रमुख फसलों का वैज्ञानिक बुआई कैलेंडर व सही समय**:
+
+• **गेहूं (Wheat)**: 1 नवंबर से 25 नवंबर (समय पर बुआई); 25 नवंबर से 15 दिसंबर (पछेती बुआई)।
+• **सरसों (Mustard)**: 25 सितंबर से 20 अक्टूबर (अगेती); 20 अक्टूबर से 5 नवंबर (समय पर)।
+• **चना (Gram)**: 10 अक्टूबर से 10 नवंबर।
+• **आलू (Potato)**: 15 अक्टूबर से 5 नवंबर (कुफरी पुखराज, कुफरी ज्योति)।
+• **धान (Paddy)**: नर्सरी 25 मई से 15 जून; रोपाई 20 जून से 15 जुलाई।`;
+    } else {
+      return `📅 **Agro-Climatic Sowing Windows**:
+
+• **Wheat**: Nov 1 to Nov 25 (Optimal yield window); late sowing up to Dec 15.
+• **Mustard**: Oct 1 to Oct 25 (Maximizes oil content and escapes Aphid peaks).
+• **Chickpea (Gram)**: Oct 15 to Nov 15.
+• **Potato**: Oct 15 to Nov 10 for main crop.
+• **Paddy**: Nursery sowing May 25 to June 15; transplanting mid-June to July.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // K. TERMITES & UNDERGROUND PESTS
+  // -------------------------------------------------------------------
+  if (hasTermite) {
+    if (langMode === 'hi') {
+      return `🐜 **दीमक (Termite) एवं भूमिगत कीट नियंत्रण**:
+
+1. **खड़ी फसल में उपचार**: **फिप्रोनिल 0.3% GR (Regent)** @ 8-10 किग्रा प्रति एकड़ खेत में बालू में मिलाकर बिखरें और तुरंत सिंचाई करें, या **क्लोरपायरीफॉस 20% EC** @ 1.5 लीटर प्रति एकड़ सिंचाई के पानी के साथ बहाएं।
+2. **बुआई पूर्व रोकथाम**: बुआई से पहले खेत में नीम की खली @ 100 किग्रा/एकड़ डालें तथा बीज को **इमिडाक्लोप्रिड 600 FS** @ 5 मि.ली. प्रति किग्रा बीज से उपचारित करें।`;
+    } else {
+      return `🐜 **Subterranean Termite & White Grub Management**:
+
+1. **Standing Crop Emergency**: Broadcast **Fipronil 0.3% GR** @ 8–10 kg/acre mixed with sand followed by light irrigation, or drench with **Chlorpyrifos 20% EC** @ 1.5 L/acre through canal irrigation.
+2. **Preventative Seed Dressing**: Treat seed with **Imidacloprid 600 FS** @ 5 ml/kg seed before sowing.`;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // L. GENERAL PEST & DISEASE DIAGNOSIS
   // -------------------------------------------------------------------
   if (hasPestGeneral) {
     if (langMode === 'hi') {
@@ -421,25 +585,32 @@ You can ask me about:
     }
   }
 
-  // Fallback default helpful response
+  // -------------------------------------------------------------------
+  // M. CONTEXT-AWARE INTELLIGENT FALLBACK
+  // -------------------------------------------------------------------
   if (langMode === 'hi') {
-    return `🌾 **कृषि दोस्त AI कृषि विशेषज्ञ सलाह**:
+    return `🌾 **कृषि दोस्त AI फसल विज्ञान परामर्श**:
 
-आपके प्रश्न "${raw}" के संबंध में:
-• **सर्वोत्तम प्रथा**: फसल में पोषण संतुलन बनाए रखने के लिए मिट्टी परीक्षण अनुसार ही यूरिया और DAP का प्रयोग करें।
-• **सिंचाई**: खेत में नमी की स्थिति देखकर ही सिंचाई करें, अत्यधिक जलभराव से जड़ गलन का खतरा रहता है।
-• **सटीक जानकारी के लिए**: कृपया अपनी फसल का नाम (गेहूं, धान, टमाटर, आलू, आदि) और समस्या बताएं।`;
+आपके प्रश्न **"${raw}"** के संदर्भ में वैज्ञानिक विश्लेषण:
+
+1. **सटीक समाधान**: अपनी फसल का नाम (जैसे गेहूं, धान, टमाटर, आलू, सरसों, कपास) और मुख्य लक्षण बताएं ताकि हमारे AI कृषि वैज्ञानिक तुरंत सटीक दवा व डोज की गणना कर सकें।
+2. **तुरंत किसान हेल्पलाइन सहायता**: किसी भी आपातकालीन स्थिति में भारत सरकार के टोल-फ्री **किसान कॉल सेंटर (1800-180-1551)** पर भी सीधे बात कर सकते हैं।
+3. **जांच टूल**: आप ऊपर **कैमरा बटन** दबाकर प्रभावित पौधे/पत्ती की फोटो भी भेज सकते हैं।`;
   } else if (langMode === 'hinglish') {
-    return `🌾 **Krishi Dost AI Agronomy Advisory**:
+    return `🌾 **Krishi Dost AI Agronomy Consultation**:
 
-Aapke sawal "${raw}" ke sandarbh me:
-• **Best Practice**: Fasal me balanced NPK khad ka prayog karein. Khet me jyada paani na thaharne dein.
-• **More Details**: Kripya fasal ka naam (e.g. Gehu, Dhan, Tamatar, Aloo) aur specific samasya batayein taaki main exact dava aur dosage bata sakoon.`;
+Aapke sawal **"${raw}"** ke context me:
+
+1. **Immediate Guidance**: Kripya apni fasal ka naam (e.g. Gehu, Dhan, Tamatar, Aloo, Sarson) aur exact samasya batayein taaki exact chemical aur organic dosage calculate ki ja sake.
+2. **Photo Scan**: Aap upar diye gaye **Camera button** par click karke kharab patti ya fasal ki photo bhi bhej sakte hain.
+3. **Kisan Helpline**: Free call lagayein: **Kisan Call Center (1800-180-1551)**.`;
   } else {
-    return `🌾 **Krishi Dost AI Agronomy Advisory**:
+    return `🌾 **Krishi Dost AI Agronomy Consultation**:
 
-Regarding your query: "${raw}"
-• **Recommended Practice**: Maintain balanced NPK nutrition tailored to the crop stage. Avoid excessive flood irrigation to prevent root hypoxia.
-• **Specific Remedy**: Please mention your specific crop (Wheat, Rice, Tomato, Potato, Cotton, etc.) and symptom for exact chemical and organic dosages.`;
+Regarding your query **"${raw}"**:
+
+1. **Actionable Step**: Please specify your crop name (e.g. Wheat, Rice, Tomato, Potato, Mustard, Cotton) and the symptom for exact scientific chemicals, organic remedies, and precise dosages.
+2. **Crop Vision AI**: You can also attach an infected leaf photograph using the **Camera icon** above for automated disease scanning.
+3. **National Helpline**: For immediate assistance, dial the Govt of India Kisan Call Centre: **1800-180-1551** (Toll-Free).`;
   }
 };

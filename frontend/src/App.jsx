@@ -114,18 +114,20 @@ const fetchLocationAndWeather = async (pincode) => {
 const callAIBackend = async (chatHistory, newText, imageBase64, language) => {
   const customGroqKey = typeof window !== 'undefined' ? (localStorage.getItem('krishi_groq_key') || '').trim() : '';
 
-  // 1. Direct High-Speed Groq Cloud AI (if farmer/evaluator added a free key)
-  if (customGroqKey && customGroqKey.startsWith('gsk_')) {
-    try {
-      const systemPrompt = `You are Krishi Dost AI (कृषि दोस्त AI), an elite agronomy scientist and agricultural advisor for Indian farmers.
+  const systemPrompt = `You are Krishi Dost AI (कृषि दोस्त AI), an elite agronomy scientist and agricultural advisor for Indian farmers.
 MANDATORY RULES:
 1. Detect and reply in the EXACT SAME language/dialect/script the user writes in:
-   - If Hindi Devanagari (e.g. "गेहूं में यूरिया कब डालें?"): Reply in respectful Hindi Devanagari.
-   - If Hinglish (e.g. "tamatar me patta mud raha h kya kare"): Reply in natural Hinglish with practical remedies.
+   - If Hindi Devanagari (e.g. "गेहूं में यूरिया कब डालें?", "मिट्टी की जांच"): Reply in respectful, clear Hindi Devanagari.
+   - If Hinglish (e.g. "tamatar me patta mud raha h kya kare", "aam me fal kyu girte hai"): Reply in natural conversational Hinglish.
    - If English: Reply in structured English.
-2. Provide exact dosage, chemical name (like Imidacloprid 17.8% SL @ 0.5ml/L, Mancozeb 75% WP @ 2.5g/L), organic options (Neem oil, Jeevamrit), and irrigation/soil timing.
-3. Keep answers clear, structured with bullet points. Zero generic filler, 100% actionable agricultural science.`;
+   - If Bengali, Marathi, Punjabi, Gujarati, etc.: Reply in that exact language and script.
+2. ANSWER THE USER'S SPECIFIC QUESTION DIRECTLY. Provide genuine, practical, scientifically validated agricultural knowledge.
+3. Include specific medicine/chemical names (e.g. Imidacloprid 17.8% SL @ 0.5ml/L, Mancozeb 75% WP @ 2.5g/L, Planofix, Coragen), exact dosages, organic solutions (Neem oil, Jeevamrit), and irrigation/soil timing.
+4. Keep answers neat, formatted with bold highlights and bullet points. Never give canned generic boilerplate.`;
 
+  // 1. Direct High-Speed Groq Cloud AI (if farmer/evaluator added a key)
+  if (customGroqKey && customGroqKey.startsWith('gsk_')) {
+    try {
       const groqMessages = [
         { role: 'system', content: systemPrompt },
         ...(Array.isArray(chatHistory) ? chatHistory.slice(-4).map(m => ({
@@ -153,20 +155,70 @@ MANDATORY RULES:
       if (groqRes.ok) {
         const groqData = await groqRes.json();
         const reply = groqData.choices?.[0]?.message?.content;
-        if (reply) return reply;
+        if (reply && reply.trim().length > 15) return reply.trim();
       }
     } catch (groqErr) {
-      console.warn("Direct Groq API error, falling back to local expert system:", groqErr.message);
+      console.warn("Direct Groq API error, falling back:", groqErr.message);
     }
   }
 
-  // 2. Render / Local Node.js Backend API
+  // 2. Direct Cloud Generative AI Engine (Pollinations - Zero API Key Needed, Unlimited & Instant)
+  try {
+    const aiRes = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...(Array.isArray(chatHistory) ? chatHistory.slice(-4).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text
+          })) : []),
+          { role: 'user', content: newText || "Diagnose plant health and provide advisory." }
+        ],
+        model: 'openai',
+        seed: Math.floor(Math.random() * 1000)
+      }),
+      signal: AbortSignal.timeout(12000)
+    });
+
+    if (aiRes.ok) {
+      const text = await aiRes.text();
+      if (text && text.trim().length > 25 && !text.includes('<!DOCTYPE') && !text.includes('<html')) {
+        return text.trim();
+      }
+    }
+  } catch (cloudAiErr) {
+    console.warn("Direct Cloud AI POST attempt error, trying GET channel:", cloudAiErr.message);
+  }
+
+  // 2b. Direct Cloud Generative AI (GET endpoint fallback)
+  try {
+    const isHindi = /[\u0900-\u097F]/.test(newText || '');
+    const promptSuffix = isHindi 
+      ? "\n(कृपया कृषि दोस्त AI के रूप में हिंदी में बिंदुवार सटीक वैज्ञानिक सलाह, दवा और खुराक दें)"
+      : "\n(Please reply as Krishi Dost AI with specific agronomic advice, medicine name, and exact dosage in the same language)";
+    const encoded = encodeURIComponent((newText || '') + promptSuffix);
+    const getRes = await fetch(`https://text.pollinations.ai/${encoded}?model=openai`, {
+      signal: AbortSignal.timeout(10000)
+    });
+    if (getRes.ok) {
+      const getText = await getRes.text();
+      if (getText && getText.trim().length > 25 && !getText.includes('<!DOCTYPE') && !getText.includes('<html')) {
+        return getText.trim();
+      }
+    }
+  } catch (getErr) {
+    console.warn("Direct Cloud AI GET attempt error:", getErr.message);
+  }
+
+  // 3. Render / Local Node.js Backend API
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ chatHistory, newText, imageBase64, language }),
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(10000)
     });
     if (response.ok) {
       const data = await response.json();
@@ -176,7 +228,7 @@ MANDATORY RULES:
     console.warn("Backend chat unavailable or timed out, activating local agronomic expert:", error.message);
   }
 
-  // 3. Dynamic Multi-Crop Agronomic Expert Engine (30+ crops, 50+ diseases, zero generic templates)
+  // 4. Dynamic Multi-Crop Agronomic Expert Engine (30+ crops, 50+ diseases, zero generic templates)
   return generateDynamicAgriResponse(newText, imageBase64, language);
 };
 
